@@ -1,0 +1,79 @@
+.auth { position: absolute; inset: 0; display: grid; grid-template-columns: minmax(480px, 44%) 1fr; overflow: hidden; }
+.auth-side {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 56px 22px;
+  background: linear-gradient(180deg, rgba(8, 11, 15, 0.94), rgba(5, 7, 10, 0.97));
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+  box-shadow: 30px 0 80px -20px rgba(0, 0, 0, 0.8);
+}
+.auth-top { display: flex; }
+.auth-form { margin: auto 0; padding: 28px 0; width: 100%; max-width: 520px; animation: pageIn 0.6s var(--ease) both; }
+.auth-brand { display: flex; align-items: center; gap: 16px; margin-bottom: 30px; }
+.auth-brand img { width: 58px; height: 58px; border-radius: 15px; box-shadow: 0 12px 34px -10px rgba(61, 214, 245, 0.75); }
+.auth-brand h1 { margin: 2px 0 0; font-size: 28px; font-weight: 700; letter-spacing: 0.06em; line-height: 1.3; }
+.auth-title { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+.auth-lead { color: var(--tx-2); margin: 0 0 20px; font-size: 13px; }
+.auth-input {
+  height: 54px;
+  font-family: var(--mono);
+  font-size: 22px;
+  letter-spacing: 0.18em;
+  padding: 0 18px;
+  border-radius: 14px;
+}
+.auth-input.pw { letter-spacing: 0.3em; }
+.auth-foot { color: var(--tx-3); font-size: 11.5px; }
+.auth-hero { position: relative; overflow: hidden; }
+.auth-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 70% 50%; transform: scale(1.04); animation: heroIn 2.4s var(--ease) both; }
+@keyframes heroIn { from { transform: scale(1.12); opacity: 0.2; } to { transform: scale(1.04); opacity: 1; } }
+.auth-hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 7, 10, 0.95) 0%, rgba(5, 7, 10, 0.35) 38%, rgba(5, 7, 10, 0.1) 70%), linear-gradient(0deg, rgba(5, 7, 10, 0.92) 0%, transparent 45%); }
+.auth-hero-copy { position: absolute; left: 48px; right: 48px; bottom: 44px; animation: pageIn 0.9s 0.3s var(--ease) both; }
+.auth-hero-copy h2 { font-size: 34px; line-height: 1.45; margin: 6px 0 10px; font-weight: 700; letter-spacing: 0.04em; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.6); }
+.auth-hero-copy p { color: var(--tx-2); margin: 0 0 22px; }
+.auth-feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 860px; }
+.auth-feats div {
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(10, 14, 19, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(14px);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+}
+.auth-feats svg { width: 18px; height: 18px; color: var(--cyan); grid-row: span 2; align-self: start; margin-top: 3px; }
+.auth-feats b { font-size: 13px; }
+.auth-feats span { color: var(--tx-3); font-size: 11.5px; line-height: 1.5; }
+
+.demo-accounts { margin-top: 30px; }
+.demo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.demo-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.025);
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  transition: all 0.18s var(--ease);
+}
+.demo-card:hover { border-color: var(--cyan-line); background: var(--surface-hover); transform: translateY(-1px); }
+.demo-card b { font-size: 13px; display: block; }
+.demo-card small { color: var(--tx-3); font-size: 11px; display: flex; gap: 6px; align-items: center; }
+.who-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.03); margin-bottom: 18px; }
+.who-card b { font-size: 15px; }
+.pw-rules { display: grid; gap: 6px; margin: 4px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--tx-3); }
+.pw-rules li { display: flex; align-items: center; gap: 8px; }
+.pw-rules li.ok { color: var(--ok); }
+.pw-rules svg { width: 14px; height: 14px; }
+.center-card { position: absolute; inset: 0; display: grid; place-items: center; padding: 30px; overflow-y: auto; }
+.auth-hero-line { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: 0.08em; color: var(--tx-1); text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7); }

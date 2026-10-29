@@ -1,0 +1,127 @@
+/* 依頼者の画面（S05・S07・S09・S10・S11）だけで使う見た目 */
+
+/* 依頼の流れ（STEP 1〜3） */
+.flow-steps { display: flex; align-items: center; gap: 0; margin: -6px 0 22px; }
+.flow-step { display: flex; align-items: center; gap: 10px; color: var(--tx-3); font-size: 12.5px; white-space: nowrap; }
+.flow-step .n {
+  width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 600;
+  border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.03); color: var(--tx-3);
+}
+.flow-step.on { color: var(--tx-1); font-weight: 600; }
+.flow-step.on .n { color: #04121a; border-color: transparent; background: linear-gradient(180deg, #62e2f9, #23b4de); box-shadow: 0 0 16px rgba(61, 214, 245, 0.5); }
+.flow-step.done { color: var(--tx-2); }
+.flow-step.done .n { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-soft); }
+.flow-line { flex: 0 0 56px; height: 1px; margin: 0 14px; background: var(--line-2); }
+.flow-line.done { background: linear-gradient(90deg, var(--cyan), rgba(61, 214, 245, 0.3)); box-shadow: 0 0 6px rgba(61, 214, 245, 0.5); }
+
+/* 文字数カウンタ */
+.counter { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--tx-3); }
+.counter.over { color: var(--danger); }
+
+/* 自動で入る項目 */
+.auto-card { display: flex; flex-direction: column; gap: 14px; }
+.auto-row { display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line-2); background: rgba(255, 255, 255, 0.02); }
+.auto-row svg { width: 17px; height: 17px; color: var(--cyan); flex: none; }
+.auto-row small { display: block; font-size: 11px; color: var(--tx-3); }
+.auto-row b { font-weight: 500; font-size: 13.5px; }
+
+/* 図面の追加ボタン（空の枠） */
+.thumb-add {
+  border-radius: 12px; border: 1.5px dashed var(--line-strong); background: rgba(61, 214, 245, 0.025);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  aspect-ratio: 297 / 210; color: var(--tx-2); cursor: pointer; transition: all 0.2s var(--ease); font-size: 12.5px;
+}
+.thumb-add svg { width: 26px; height: 26px; color: var(--cyan); }
+.thumb-add:hover { border-color: var(--cyan-line); background: rgba(61, 214, 245, 0.07); color: var(--tx-1); transform: translateY(-2px); }
+.thumb-add:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+.attach-x { margin-left: auto; }
+
+/* 回覧者の枠（S07） */
+.slots { display: flex; flex-direction: column; gap: 0; position: relative; }
+.slot { display: grid; grid-template-columns: 44px 1fr auto; gap: 16px; align-items: center; padding: 14px 0; position: relative; }
+.slot + .slot { border-top: 1px solid var(--line); }
+.slot-no {
+  width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+  font-family: var(--mono); font-weight: 600; font-size: 13px;
+  background: rgba(255, 122, 144, 0.08); color: var(--role-approver); border: 1px solid rgba(255, 122, 144, 0.32);
+}
+.slot.empty .slot-no { background: transparent; color: var(--tx-4); border-style: dashed; border-color: var(--line-strong); }
+.slot-person { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.slot-person b { font-size: 14.5px; font-weight: 600; }
+.slot-person small { display: block; color: var(--tx-3); font-size: 11.5px; }
+.slot-role { font-size: 11px; color: var(--tx-3); letter-spacing: 0.04em; }
+.slot-empty { color: var(--tx-3); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+
+/* 回覧ルートの見取り図 */
+.route-map { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 0; }
+.route-node {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px;
+  border: 1px solid var(--line-2); background: rgba(255, 255, 255, 0.03); font-size: 12px; white-space: nowrap;
+}
+.route-node .k { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); color: var(--tx-2); }
+.route-node.me { border-color: rgba(52, 224, 161, 0.35); background: rgba(52, 224, 161, 0.06); }
+.route-node.me .k { background: rgba(52, 224, 161, 0.16); color: var(--role-requester); }
+.route-node.rev { border-color: rgba(255, 122, 144, 0.32); }
+.route-node.rev .k { background: rgba(255, 122, 144, 0.14); color: var(--role-approver); }
+.route-node.tgt .k { background: var(--violet-soft); color: var(--violet); }
+.route-node.skip { border-style: dashed; color: var(--tx-4); background: transparent; }
+.route-node.end { border-color: rgba(52, 224, 161, 0.35); color: var(--ok); }
+.route-arrow { color: var(--tx-4); padding: 0 6px; display: grid; place-items: center; }
+.route-arrow svg { width: 14px; height: 14px; }
+
+/* 受付完了（S09） */
+.done-wrap { max-width: 980px; margin: 0 auto; padding: 36px 32px 56px; animation: pageIn 0.5s var(--ease) both; }
+.done-hero { display: grid; grid-template-columns: 380px 1fr; gap: 28px; align-items: center; }
+.done-hero img { width: 380px; height: 380px; object-fit: cover; animation: floatIn 1s var(--ease) both; }
+.done-check {
+  display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 8px; border-radius: 999px;
+  background: var(--ok-soft); border: 1px solid rgba(52, 224, 161, 0.32); color: var(--ok); font-weight: 600; font-size: 13px;
+}
+.done-check svg { width: 20px; height: 20px; }
+.done-title { font-size: 30px; font-weight: 600; margin: 14px 0 6px; letter-spacing: 0.03em; }
+.done-number {
+  display: inline-flex; flex-direction: column; gap: 2px; padding: 14px 20px; border-radius: 14px; margin: 14px 0 6px;
+  background: linear-gradient(160deg, rgba(61, 214, 245, 0.12), rgba(61, 214, 245, 0.02)); border: 1px solid var(--cyan-line);
+}
+.done-number small { font-size: 11px; color: var(--tx-3); letter-spacing: 0.06em; }
+.done-number b { font-family: var(--mono); font-size: 30px; color: var(--cyan); letter-spacing: 0.04em; text-shadow: 0 0 22px rgba(61, 214, 245, 0.45); font-weight: 600; }
+@keyframes floatIn { from { opacity: 0; transform: translate(-30px, 30px) scale(0.92); } to { opacity: 1; transform: none; } }
+
+/* 一覧の承認数 */
+.mini-steps { display: inline-flex; gap: 3px; vertical-align: middle; }
+.mini-steps i { width: 14px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, 0.1); }
+.mini-steps i.ok { background: var(--cyan); box-shadow: 0 0 6px rgba(61, 214, 245, 0.6); }
+.mini-steps i.now { background: var(--warn); box-shadow: 0 0 6px rgba(255, 181, 71, 0.6); }
+.mini-steps i.ng { background: var(--danger); }
+
+/* 製作の進み具合（S11） */
+.milestones { display: flex; flex-direction: column; gap: 0; }
+.milestone { display: grid; grid-template-columns: 22px 1fr auto; gap: 12px; align-items: center; padding: 9px 0; font-size: 13px; }
+.milestone + .milestone { border-top: 1px solid var(--line); }
+.milestone .mk { width: 20px; height: 20px; border-radius: 6px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); color: transparent; }
+.milestone .mk svg { width: 12px; height: 12px; }
+.milestone.ok .mk { background: var(--ok-soft); border-color: rgba(52, 224, 161, 0.5); color: var(--ok); }
+.milestone .d { font-family: var(--mono); font-size: 11.5px; color: var(--tx-3); }
+
+/* 履歴 */
+.timeline { display: flex; flex-direction: column; position: relative; padding-left: 18px; }
+.timeline::before { content: ''; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 1px; background: var(--line-2); }
+.tl-item { position: relative; padding: 6px 0 10px; }
+.tl-item::before {
+  content: ''; position: absolute; left: -17px; top: 12px; width: 9px; height: 9px; border-radius: 50%;
+  background: #10151c; border: 2px solid var(--cyan); box-shadow: 0 0 8px rgba(61, 214, 245, 0.5);
+}
+.tl-item.warn::before { border-color: var(--warn); box-shadow: 0 0 8px rgba(255, 181, 71, 0.5); }
+.tl-item.muted::before { border-color: var(--tx-4); box-shadow: none; }
+.tl-item.ok::before { border-color: var(--ok); box-shadow: 0 0 8px rgba(52, 224, 161, 0.5); }
+.tl-time { font-family: var(--mono); font-size: 10.5px; color: var(--tx-3); }
+.tl-text { font-size: 12.5px; }
+.tl-detail { font-size: 11.5px; color: var(--tx-3); overflow-wrap: anywhere; }
+
+.desc-text { white-space: pre-wrap; line-height: 1.8; }
+
+/* 状態ごとの件数（S10） */
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.stat.on { border-color: var(--cyan-line); box-shadow: 0 0 0 1px rgba(61, 214, 245, 0.25), 0 0 30px -12px rgba(61, 214, 245, 0.5); }

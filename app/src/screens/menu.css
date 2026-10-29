@@ -1,0 +1,59 @@
+.menu-hero {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  min-height: 250px;
+  display: grid;
+  grid-template-columns: 1fr 470px;
+  gap: 24px;
+  padding: 30px 30px 26px 36px;
+  margin-bottom: 30px;
+  box-shadow: var(--shadow);
+}
+.menu-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 60% 50%; animation: heroIn 2s var(--ease) both; }
+@keyframes heroIn { from { transform: scale(1.08); opacity: 0.3; } to { transform: none; opacity: 1; } }
+.menu-hero-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 7, 10, 0.9) 0%, rgba(5, 7, 10, 0.55) 45%, rgba(5, 7, 10, 0.75) 100%); }
+.menu-hero-body { position: relative; align-self: end; }
+.menu-hero-body h1 { margin: 6px 0 0; font-size: 30px; font-weight: 700; letter-spacing: 0.04em; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.7); }
+.menu-notices {
+  position: relative;
+  border-radius: 18px;
+  padding: 8px;
+  background: rgba(8, 11, 15, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  backdrop-filter: blur(18px);
+  align-self: center;
+}
+.menu-notices-head { display: flex; align-items: center; gap: 8px; padding: 6px 10px 8px; font-weight: 600; font-size: 13px; }
+.menu-notices-head svg { color: var(--cyan); }
+.menu-notices-head .tiny { margin-left: auto; font-weight: 400; }
+.notice-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-size: 12.5px;
+  transition: background 0.15s;
+}
+.notice-row:hover { background: rgba(255, 255, 255, 0.06); }
+.notice-row.zero { opacity: 0.55; }
+.notice-ic { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; border: 1px solid; flex: none; }
+.notice-ic svg { width: 15px; height: 15px; }
+.notice-count { font-family: var(--mono); font-size: 18px; font-weight: 600; min-width: 46px; text-align: right; }
+.notice-count small { font-family: var(--font); font-size: 11px; color: var(--tx-3); margin-left: 2px; font-weight: 400; }
+.menu-section { margin-top: 26px; }
+.menu-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.tile-badge { position: absolute; left: 20px; top: 18px; z-index: 2; }
+
+@media (max-width: 1280px) {
+  .menu-hero { grid-template-columns: 1fr; }
+  .menu-hero-body h1 { font-size: 26px; }
+  .menu-notices { align-self: stretch; }
+}

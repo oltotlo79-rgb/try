@@ -1,0 +1,126 @@
+/* 問い合わせ（S18〜S20）専用のスタイル */
+
+.inq-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-l);
+  border: 1px solid var(--line);
+  background:
+    radial-gradient(600px 240px at 85% 50%, rgba(61, 214, 245, 0.12), transparent 70%),
+    linear-gradient(160deg, rgba(24, 31, 42, 0.85), rgba(10, 13, 18, 0.9));
+  padding: 26px 28px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-height: 150px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.inq-hero img {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 230px;
+  height: 230px;
+  transform: translateY(-50%);
+  object-fit: cover;
+  -webkit-mask-image: radial-gradient(circle, #000 38%, transparent 70%);
+  mask-image: radial-gradient(circle, #000 38%, transparent 70%);
+  pointer-events: none;
+}
+.inq-hero-text { position: relative; z-index: 1; max-width: 640px; }
+.inq-hero-text b { font-size: 16px; display: block; margin-bottom: 4px; }
+.inq-hero-stats { position: relative; z-index: 1; display: flex; gap: 12px; margin-left: auto; margin-right: 230px; }
+.inq-mini {
+  min-width: 112px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: rgba(6, 9, 13, 0.5);
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  transition: all 0.18s;
+}
+.inq-mini:hover { border-color: var(--cyan-line); transform: translateY(-2px); }
+.inq-mini span { display: block; font-size: 11.5px; color: var(--tx-2); }
+.inq-mini b { font-family: var(--mono); font-size: 24px; font-weight: 600; }
+
+.inq-filter { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
+
+.inq-title-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.inq-title-cell span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 420px; }
+.inq-lock { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; color: var(--violet); border: 1px solid rgba(155, 140, 255, 0.35); background: var(--violet-soft); border-radius: 5px; padding: 0 6px; height: 19px; white-space: nowrap; }
+.inq-lock svg { width: 11px; height: 11px; }
+
+/* カテゴリ */
+.cat-chip { font-size: 11px; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--line-2); color: var(--tx-2); background: rgba(255, 255, 255, 0.03); white-space: nowrap; }
+.cat-使い方 { color: var(--cyan); border-color: rgba(61, 214, 245, 0.3); background: var(--cyan-soft); }
+.cat-不具合 { color: var(--danger); border-color: rgba(255, 107, 107, 0.3); background: var(--danger-soft); }
+.cat-要望 { color: var(--violet); border-color: rgba(155, 140, 255, 0.3); background: var(--violet-soft); }
+
+/* S19 選択カード */
+.choice-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.choice {
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: rgba(6, 9, 13, 0.45);
+  cursor: pointer;
+  text-align: left;
+  color: var(--tx-2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s var(--ease);
+}
+.choice svg { width: 18px; height: 18px; }
+.choice b { color: var(--tx-1); font-size: 13px; font-weight: 600; }
+.choice small { font-size: 11px; color: var(--tx-3); }
+.choice:hover { border-color: var(--line-strong); }
+.choice.on { border-color: var(--cyan-line); background: rgba(61, 214, 245, 0.09); box-shadow: 0 0 0 3px rgba(61, 214, 245, 0.1); color: var(--cyan); }
+.choice-grid.two { grid-template-columns: 1fr 1fr; }
+
+.file-pick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  background: rgba(6, 9, 13, 0.4);
+}
+.file-pick .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--tx-2); font-size: 12.5px; }
+
+/* S20 やり取り */
+.thread { display: flex; flex-direction: column; gap: 18px; position: relative; }
+.thread::before { content: ''; position: absolute; left: 16px; top: 8px; bottom: 8px; width: 1px; background: linear-gradient(180deg, var(--line-2), transparent); }
+.msg { display: flex; gap: 14px; position: relative; }
+.msg .avatar { position: relative; z-index: 1; }
+.msg-bubble {
+  flex: 1;
+  min-width: 0;
+  border-radius: 14px;
+  padding: 12px 16px 14px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.025);
+}
+.msg-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--tx-2); }
+.msg-head b { color: var(--tx-1); font-size: 13px; }
+.msg-body { white-space: pre-wrap; line-height: 1.8; color: var(--tx-1); user-select: text; }
+.msg.answer .msg-bubble { border-color: rgba(155, 140, 255, 0.3); background: linear-gradient(160deg, rgba(155, 140, 255, 0.1), rgba(155, 140, 255, 0.02)); }
+.msg.question .msg-bubble { border-color: rgba(61, 214, 245, 0.22); background: linear-gradient(160deg, rgba(61, 214, 245, 0.07), rgba(61, 214, 245, 0.01)); }
+.msg.origin .msg-bubble { border-color: var(--line-2); background: rgba(255, 255, 255, 0.04); }
+.msg-kind { font-size: 10.5px; font-weight: 600; padding: 0 7px; border-radius: 5px; height: 19px; display: inline-flex; align-items: center; }
+.msg.answer .msg-kind { color: var(--violet); background: var(--violet-soft); }
+.msg.question .msg-kind, .msg.origin .msg-kind { color: var(--cyan); background: var(--cyan-soft); }
+
+.reply-box { border-radius: 14px; border: 1px solid var(--line-2); background: rgba(6, 9, 13, 0.45); padding: 14px; }
+.reply-box .textarea { background: transparent; border: 0; box-shadow: none; padding: 4px 2px; min-height: 96px; }
+.reply-box .textarea:focus { box-shadow: none; background: transparent; }
+.reply-box:focus-within { border-color: var(--cyan-line); box-shadow: 0 0 0 3px rgba(61, 214, 245, 0.12); }
+
+.status-steps { display: flex; gap: 6px; align-items: center; }
+.status-steps span { font-size: 11.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--tx-3); }
+.status-steps span.on { color: var(--cyan); border-color: var(--cyan-line); background: var(--cyan-soft); font-weight: 600; }
+.status-steps i { width: 14px; height: 1px; background: var(--line-2); }
