@@ -4,7 +4,7 @@ import { AlertTriangle, ArrowRight, BellRing, ChevronRight, ClipboardCheck, Hour
 import type { RouteOf, Route } from '../router'
 import { useApp, useMe } from '../store'
 import { RoleTags } from '../components/ui'
-import { deptName, isAdmin, isEquipment, isIT, isLeaderPlus, pendingStep } from '../domain/rules'
+import { canUseEquipment, deptName, isAdmin, isEquipment, isIT, isLeaderPlus, pendingStep } from '../domain/rules'
 import { elapsedDays, fmtDate } from '../domain/format'
 import hero from '../assets/img/menu_hero.webp'
 import imgRequest from '../assets/img/menu_request.webp'
@@ -44,10 +44,10 @@ export default function S04Menu({ route }: { route: RouteOf<'S04'> }) {
   const notices: { show: boolean; icon: ReactNode; label: string; count: number; tone: string; to: Route }[] = [
     { show: true, icon: <Undo2 />, label: 'あなたの依頼：差し戻されている依頼', count: returned, tone: 'warn', to: { s: 'S10', filter: 'returned' } },
     { show: true, icon: <Hourglass />, label: 'あなたの依頼：回覧中の依頼', count: circulating, tone: 'cyan', to: { s: 'S10', filter: 'circulating' } },
-    { show: isLeaderPlus(me), icon: <UserRoundCog />, label: '担当者が決まっていない依頼（設備メンバー）', count: unassigned, tone: 'info', to: { s: 'S14', preset: 'unassigned' } },
-    { show: isEquipment(me), icon: <ClipboardCheck />, label: 'あなたが担当中の依頼（設備メンバー）', count: assigned, tone: 'info', to: { s: 'S14', preset: 'mine' } },
+    { show: isLeaderPlus(db, me), icon: <UserRoundCog />, label: '担当者が決まっていない依頼（設備メンバー）', count: unassigned, tone: 'info', to: { s: 'S14', preset: 'unassigned' } },
+    { show: isEquipment(db, me), icon: <ClipboardCheck />, label: 'あなたが担当中の依頼（設備メンバー）', count: assigned, tone: 'info', to: { s: 'S14', preset: 'mine' } },
     { show: isIT(me), icon: <MessageCircleQuestion />, label: '未回答の問い合わせ（IT担当者）', count: openInq, tone: 'warn', to: { s: 'S18', preset: 'open' } },
-    { show: isAdmin(me), icon: <AlertTriangle />, label: '承認が3日以上止まっている依頼（管理者）', count: stalled, tone: 'danger', to: { s: 'S27' } },
+    { show: isAdmin(db, me), icon: <AlertTriangle />, label: '承認が3日以上止まっている依頼（設備組長以上・IT担当者）', count: stalled, tone: 'danger', to: { s: 'S27' } },
   ]
   const d = new Date()
 
@@ -82,16 +82,16 @@ export default function S04Menu({ route }: { route: RouteOf<'S04'> }) {
         <Tile no="02" img={imgMy} title="自分の依頼" desc="出した依頼の承認状況と製作の進み具合を見る" badge={returned ? `差し戻し ${returned}件` : undefined} onClick={() => go({ s: 'S10' })} />
         <Tile no="03" img={imgInquiry} title="問い合わせ" desc="使い方の質問・不具合の連絡・要望。過去の回答も見られる" onClick={() => go({ s: 'S18' })} />
       </Section>
-      {isEquipment(me) && (
+      {canUseEquipment(db, me) && (
         <Section label="設備メンバー" color="var(--role-equipment)">
-          <Tile no="04" img={imgList} title="依頼書一覧" desc="すべての依頼書と進捗を見る・更新する" badge={isLeaderPlus(me) && unassigned ? `担当者未定 ${unassigned}件` : undefined} onClick={() => go({ s: 'S14' })} />
+          <Tile no="04" img={imgList} title="依頼書一覧" desc="すべての依頼書と進捗を見る・更新する" badge={isLeaderPlus(db, me) && unassigned ? `担当者未定 ${unassigned}件` : undefined} onClick={() => go({ s: 'S14' })} />
           <Tile no="05" img={imgProgress} title="作業進捗" desc="メンバーごとの作業（依頼書＋依頼書以外）を見る" onClick={() => go({ s: 'S16' })} />
           <Tile no="06" img={imgResults} title="成果確認" desc="担当者ごとの貢献額をグラフと表で比較する" onClick={() => go({ s: 'S17' })} />
           <Tile no="07" img={imgAnalytics} title="データ分析" desc="依頼の傾向・納期遵守率・リードタイム・承認にかかる時間・負荷を分析する" badge="追加提案" onClick={() => go({ s: 'S28' })} />
         </Section>
       )}
-      {isAdmin(me) && (
-        <Section label="管理者・IT担当者" color="var(--role-admin)">
+      {isAdmin(db, me) && (
+        <Section label="設備組長以上・IT担当者" color="var(--role-admin)">
           <Tile no="08" img={imgSettings} title="設定" desc="ユーザー・社員データ・回覧先・依頼書の管理（代理承認）" violet badge={stalled ? `承認停滞 ${stalled}件` : undefined} onClick={() => go({ s: 'S21' })} />
         </Section>
       )}

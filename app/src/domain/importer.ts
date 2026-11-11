@@ -1,6 +1,9 @@
 // 社員データ（CSV）の取り込み（S23）。列：従業員番号,氏名,氏名カナ,部署コード,部署名,役職,メールアドレス
-import type { DB, Employee } from './types'
+import type { DB, Employee, Roles } from './types'
 import { newId } from './ids'
+import { roleNamesFor, rolesFor } from './rules'
+
+const roleLabelOf = (r: Roles, position: string) => roleNamesFor(r, position).join('・') || '一般'
 
 export interface CsvEmployee {
   line: number
@@ -73,6 +76,10 @@ export function previewImport(db: DB, text: string): ImportPreview {
     if (cur.position !== r.position) changes.push(`役職 ${cur.position || '—'} → ${r.position || '—'}`)
     if (cur.email !== r.email) changes.push(`メール ${cur.email} → ${r.email}`)
     if (!cur.active) changes.push('無効 → 有効')
+    // 権限は所属部署・役職から自動で決まるため、変わる場合は確認画面に出す
+    const before = roleLabelOf(rolesFor(curDept?.name, cur.position, cur.it), cur.position)
+    const after = roleLabelOf(rolesFor(deptByCode.get(r.deptCode)?.name ?? r.deptName, r.position, cur.it), r.position)
+    if (before !== after) changes.push(`権限 ${before} → ${after}`)
     if (changes.length) changes.length && changed.push({ row: r, before: cur, changes })
   }
   const deactivated = db.employees.filter((e) => e.active && !seen.has(e.empNo))
@@ -80,7 +87,7 @@ export function previewImport(db: DB, text: string): ImportPreview {
   return { added, changed, deactivated, errors, warnMassDeactivation: deactivated.length / activeCount >= 0.1 }
 }
 
-/** 確認した内容を反映する。権限とパスワードは変えない */
+/** 確認した内容を反映する。IT担当者権限とパスワードは変えない（ほかの権限は所属部署・役職から自動で決まる） */
 export function applyImport(db: DB, pv: ImportPreview, fileName: string, by: Employee, now: number) {
   const deptFor = (code: string, name: string) => {
     let d = db.departments.find((x) => x.code === code)
@@ -94,12 +101,15 @@ export function applyImport(db: DB, pv: ImportPreview, fileName: string, by: Emp
     db.employees.push({
       id: r.empNo, empNo: r.empNo, name: r.name, kana: r.kana, deptId: deptFor(r.deptCode, r.deptName).id,
       position: r.position, email: r.email, active: true,
-      roles: { equipment: false, leader: false, manager: false, it: false },
+      it: false,
       password: null, passwordChanged: false, failedCount: 0, lockedUntil: null, lastLoginAt: null,
     })
   }
+  // 確認画面（preview）は反映前のデータを指しているため、反映先の db から従業員番号で引き直す
+  const target = (empNo: string) => db.employees.find((x) => x.empNo === empNo)
   for (const c of pv.changed) {
-    const e = c.before
+    const e = target(c.before.empNo)
+    if (!e) continue
     e.name = c.row.name
     e.kana = c.row.kana
     e.deptId = deptFor(c.row.deptCode, c.row.deptName).id
@@ -107,7 +117,9 @@ export function applyImport(db: DB, pv: ImportPreview, fileName: string, by: Emp
     e.email = c.row.email
     e.active = true
   }
-  for (const e of pv.deactivated) {
+  for (const old of pv.deactivated) {
+    const e = target(old.empNo)
+    if (!e) continue
     e.active = false
     // 回覧者に設定されていた部署の欄は空欄にする（要件 S25 補足）
     for (const d of db.departments) d.reviewers = d.reviewers.map((x) => (x === e.id ? null : x)) as typeof d.reviewers

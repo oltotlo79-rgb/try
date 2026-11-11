@@ -4,6 +4,7 @@ import {
   approvalByStage, circulationBins, completedIn, deptStats, delayBins, funnel, inquiryStats, insights, kpis, leadBins, makeRange,
   monthly, previousRange, realRequests, requestedIn, workload,
 } from './analytics'
+import { isEquipment } from './rules'
 
 const NOW = new Date(2026, 9, 29, 10, 0).getTime()
 const db = buildSeed(NOW)
@@ -70,7 +71,7 @@ describe('データ分析の指標', () => {
     const depts = deptStats(db, r)
     expect(depts.reduce((a, d) => a + d.requested, 0)).toBe(kpis(db, r, 'all').requested)
     const load = workload(db, r, 'all', NOW)
-    expect(load.every((m) => m.employee.roles.equipment)).toBe(true)
+    expect(load.every((m) => isEquipment(db, m.employee))).toBe(true)
     expect(load.reduce((a, m) => a + m.inProgress, 0)).toBeGreaterThanOrEqual(kpis(db, r, 'all').inProgress)
     const q = inquiryStats(db, r)
     expect(q.byCategory.reduce((a, c) => a + c.count, 0)).toBe(q.total)

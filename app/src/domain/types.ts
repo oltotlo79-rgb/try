@@ -1,9 +1,13 @@
 // 制作物依頼システム（サンプル）のデータ型。要件定義書「11_データ項目」を簡略化したもの。
 
+/**
+ * 権限。社員データには持たず、rolesOf（rules.ts）で所属部署・役職から求める
+ * （設備係の社員＝設備メンバー、そのうち班長＝リーダー、組長・工長・課長＝管理者）。
+ */
 export interface Roles {
   equipment: boolean // 設備メンバー
-  leader: boolean // リーダー
-  manager: boolean // 管理者
+  leader: boolean // リーダー（表示：設備班長）
+  manager: boolean // 管理者（表示：設備組長・設備工長・設備課長）
   it: boolean // IT担当者
 }
 
@@ -16,8 +20,9 @@ export interface Employee {
   position: string
   email: string
   active: boolean
-  roles: Roles
-  /** サンプルのため平文。実システムではハッシュ化（Argon2id） */
+  /** IT担当者権限（ユーザー管理で付ける唯一の権限） */
+  it: boolean
+  /** サンプルのため平文。実システムではハッシュ化（Argon2id）。未設定（null）のときの初期値は従業員番号 */
   password: string | null
   passwordChanged: boolean
   failedCount: number

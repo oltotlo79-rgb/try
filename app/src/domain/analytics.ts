@@ -392,7 +392,7 @@ export function workload(db: DB, r: Range, dept: string, now: number): MemberLoa
   const all = realRequests(db).filter((x) => matchDept(x, dept))
   const done = completedIn(db, r, dept)
   return db.employees
-    .filter((e) => isEquipment(e) && e.active)
+    .filter((e) => isEquipment(db, e) && e.active)
     .map((e) => {
       const open = all.filter((x) => x.status === 'inProgress' && x.assignees.includes(e.id))
       const mine = done.filter((x) => x.assignees.includes(e.id))

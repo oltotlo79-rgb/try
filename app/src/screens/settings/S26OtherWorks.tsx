@@ -5,7 +5,7 @@ import type { RouteOf } from '../../router'
 import type { OtherWork } from '../../domain/types'
 import { useApp, useMe } from '../../store'
 import { Avatar, Badge, Empty, EmployeePicker, Field, PageHead, Panel, ProgressBar } from '../../components/ui'
-import { MAX_ASSIGNEES, deptName, equalRatios, findEmployee, isAdmin } from '../../domain/rules'
+import { MAX_ASSIGNEES, deptName, equalRatios, findEmployee, isAdmin, isEquipment } from '../../domain/rules'
 import { fiscalYearOf, fmtDate, fmtMD, fmtYen, toISODate } from '../../domain/format'
 import headImg from '../../assets/img/set_other_works.webp'
 import './settings-d.css'
@@ -19,7 +19,7 @@ export default function S26OtherWorks({ route }: { route: RouteOf<'S26'> }) {
   const db = useApp((s) => s.db)
   const go = useApp((s) => s.go)
   const me = useMe()
-  const admin = isAdmin(me)
+  const admin = isAdmin(db, me)
   const blank = (): Form => ({
     requestDate: toISODate(Date.now()),
     deptId: db.departments[0]?.id ?? '',
@@ -35,7 +35,7 @@ export default function S26OtherWorks({ route }: { route: RouteOf<'S26'> }) {
   const [picking, setPicking] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const members = db.employees.filter((e) => e.active && e.roles.equipment)
+  const members = db.employees.filter((e) => e.active && isEquipment(db, e))
   const works = useMemo(() => [...db.otherWorks].sort((a, b) => b.requestDate.localeCompare(a.requestDate)), [db.otherWorks])
   const fy = fiscalYearOf(toISODate(Date.now()))
   const fyTotal = db.otherWorks.filter((w) => w.completedDate && fiscalYearOf(w.completedDate) === fy).reduce((s, w) => s + (w.contribution ?? 0), 0)

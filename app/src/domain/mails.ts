@@ -1,7 +1,7 @@
 // 自動で送るメール（要件「10_メール通知」M01〜M15）。サンプルのため実際には送らず、アプリ内のメールBOXに届ける。
 import type { ApprovalStep, DB, Employee, Inquiry, Mail, MailRecipient, MailType, PersonSnap, WorkRequest } from './types'
 import { newId } from './ids'
-import { BASE_URL, currentRoundSteps, findEmployee, isAdmin, isIT, isLeaderPlus, statusText } from './rules'
+import { BASE_URL, currentRoundSteps, findEmployee, isAdmin, isIT, isLeaderPlus, isManager, rolesOf, statusText } from './rules'
 import { fmtDate, fmtDateTime } from './format'
 
 export const MAIL_FROM = '制作物依頼システム <noreply@example.co.jp>'
@@ -159,18 +159,18 @@ export function mailM04(db: DB, req: WorkRequest, step: ApprovalStep, now: numbe
   })
 }
 
-const leadersAndManagers = (db: DB) => db.employees.filter((e) => e.active && (e.roles.leader || e.roles.manager))
-const leadersManagersIT = (db: DB) => db.employees.filter((e) => e.active && isLeaderPlus(e))
-const managersAndIT = (db: DB) => db.employees.filter((e) => e.active && isAdmin(e))
+const leadersAndManagers = (db: DB) => db.employees.filter((e) => e.active && (rolesOf(db, e).leader || rolesOf(db, e).manager))
+const leadersManagersIT = (db: DB) => db.employees.filter((e) => e.active && isLeaderPlus(db, e))
+const managersAndIT = (db: DB) => db.employees.filter((e) => e.active && isAdmin(db, e))
 const itStaff = (db: DB) => db.employees.filter((e) => e.active && isIT(e))
 
 export function mailM05(db: DB, req: WorkRequest, now: number): Mail {
-  const leader = leadersAndManagers(db).find((e) => e.roles.leader)
+  const leader = leadersAndManagers(db).find((e) => rolesOf(db, e).leader)
   return base(db, 'M05', [rcpt(req.requester)], `【回覧完了】制作物依頼 ${req.number} 打ち合わせを設定してください`, now, {
     requestId: req.id,
     cc: leadersAndManagers(db).map(rcpt),
     paragraphs: ['すべての承認が完了しました。', '設備担当と打ち合わせの日程を設定してください。'],
-    facts: [...reqFacts(req), ['設備側の窓口', leader ? `${leader.name}（${leader.email}）` : '設備課']],
+    facts: [...reqFacts(req), ['設備側の窓口', leader ? `${leader.name}（${leader.email}）` : '設備係']],
     link: requesterLink(req),
   })
 }
@@ -196,7 +196,7 @@ export function mailM07(db: DB, req: WorkRequest, assignee: Employee, now: numbe
 export function mailM08(db: DB, req: WorkRequest, days: number, now: number): Mail {
   const when = days > 0 ? `納期まであと${days}日です` : days === 0 ? '本日が納期です' : `納期を${-days}日過ぎています`
   const assignees = req.assignees.map((id) => findEmployee(db, id)).filter((e): e is Employee => !!e)
-  return base(db, 'M08', [rcpt(req.requester), ...managersAndIT(db).filter((e) => e.roles.manager).map(rcpt)], `【納期フォロー】制作物依頼 ${req.number} ${when}`, now, {
+  return base(db, 'M08', [rcpt(req.requester), ...managersAndIT(db).filter((e) => isManager(db, e)).map(rcpt)], `【納期フォロー】制作物依頼 ${req.number} ${when}`, now, {
     requestId: req.id,
     cc: assignees.map(rcpt),
     greeting: '関係者各位',

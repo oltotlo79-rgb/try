@@ -280,7 +280,7 @@ export function saveProgress(db: DB, reqId: string, actor: Employee, patch: Prog
   if (ids.length > MAX_ASSIGNEES) throw new RuleError(`担当者は${MAX_ASSIGNEES}人までです`)
   if (new Set(ids).size !== ids.length) throw new RuleError('同じ人を2回は担当者に選べません')
   for (const id of ids) {
-    if (!isEquipment(findEmployee(db, id))) throw new RuleError('担当者は設備メンバーから選んでください')
+    if (!isEquipment(db, findEmployee(db, id))) throw new RuleError('担当者は設備メンバーから選んでください')
   }
   const ratios = ids.length <= 1 ? (ids.length ? [100] : []) : patch.ratios
   if (ratios.length !== ids.length || ratios.some((x) => x < 0 || x > 100 || !Number.isInteger(x)))

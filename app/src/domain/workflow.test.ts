@@ -3,8 +3,8 @@ import { buildSeed } from '../data/seed'
 import type { DB } from './types'
 import { createDraft } from './requests'
 import { approveByToken, checkToken, morningBatch, proxyApprove, pullBack, resendApproval, returnByToken, saveProgress, submitRequest } from './workflow'
-import { canEditField, currentRoundSteps, equalRatios, findEmployee, pendingStep } from './rules'
-import { parseEmployeeCsv } from './importer'
+import { canEditField, canUseEquipment, currentRoundSteps, equalRatios, findEmployee, isAdmin, isEquipment, isLeaderPlus, needsPassword, pendingStep, roleLabel, rolesOf } from './rules'
+import { applyImport, parseEmployeeCsv, previewImport } from './importer'
 import { contributionRows, splitAmount } from './stats'
 import { DAY_MS } from './format'
 
@@ -12,8 +12,8 @@ const NOW = new Date(2026, 9, 29, 10, 0).getTime()
 const tokenOf = (db: DB, stepId: string) => db.tokens.find((t) => t.stepId === stepId && t.status === 'valid')!.token
 
 function newRequest(db: DB) {
-  const yamada = findEmployee(db, '20101')!
-  const r = createDraft(db, yamada, NOW)
+  const maeda = findEmployee(db, '20130')! // 製造一課の一般の社員
+  const r = createDraft(db, maeda, NOW)
   r.title = 'テスト'
   r.description = '内容'
   r.dueDate = '2026-11-30'
@@ -80,7 +80,7 @@ describe('承認回覧', () => {
 
   it('代理承認は理由必須。元のURLは無効、M10 の後に次の承認者へ M02', () => {
     const db = buildSeed(NOW)
-    const admin = findEmployee(db, '10050')!
+    const admin = findEmployee(db, '28316')!
     const r = newRequest(db)
     submitRequest(db, r.id, NOW)
     const tok = tokenOf(db, pendingStep(r)!.id)
@@ -93,7 +93,7 @@ describe('承認回覧', () => {
 
   it('再送・承認者の変更で古いURLは使えなくなる', () => {
     const db = buildSeed(NOW)
-    const admin = findEmployee(db, '10050')!
+    const admin = findEmployee(db, '28316')!
     const r = newRequest(db)
     submitRequest(db, r.id, NOW)
     const old = tokenOf(db, pendingStep(r)!.id)
@@ -114,7 +114,7 @@ describe('承認回覧', () => {
   it('自分自身・同じ人は回覧者に選べない', () => {
     const db = buildSeed(NOW)
     const r = newRequest(db)
-    r.reviewers = ['20101', null, null]
+    r.reviewers = ['20130', null, null]
     expect(() => submitRequest(db, r.id, NOW)).toThrow('自分自身')
     r.reviewers = ['20110', '20110', null]
     expect(() => submitRequest(db, r.id, NOW)).toThrow('同じ人')
@@ -124,24 +124,24 @@ describe('承認回覧', () => {
 describe('進捗と成果', () => {
   it('担当者を決めると対応中＋M07、引き渡し完了日で完了＋M11', () => {
     const db = buildSeed(NOW)
-    const leader = findEmployee(db, '10123')!
+    const leader = findEmployee(db, '52035')!
     const r = db.requests.find((x) => x.number === 'R2026-0121')!
     expect(r.status).toBe('circulated')
     const base = {
       assignees: r.assignees, ratios: [] as number[], meetingDone: false, meetingDate: null, estimateDone: false, estimateDate: null,
       purchaseDone: false, purchaseDate: null, progress: 0, productionDate: null, deliveryDate: null, contribution: null,
     }
-    const a = saveProgress(db, r.id, leader, { ...base, assignees: ['10245', '10123'], ratios: [50, 50] }, NOW)
+    const a = saveProgress(db, r.id, leader, { ...base, assignees: ['38660', '52035'], ratios: [50, 50] }, NOW)
     expect(a.mails.map((m) => m.type)).toEqual(['M07', 'M07'])
     expect(r.status).toBe('inProgress')
-    const b = saveProgress(db, r.id, leader, { ...base, assignees: ['10245', '10123'], ratios: [50, 50], deliveryDate: '2026-10-29' }, NOW + 1)
+    const b = saveProgress(db, r.id, leader, { ...base, assignees: ['38660', '52035'], ratios: [50, 50], deliveryDate: '2026-10-29' }, NOW + 1)
     expect(b.mails.map((m) => m.type)).toEqual(['M11'])
     expect(r.status).toBe('done')
   })
 
   it('打ち合わせ・見積り依頼・買い入れは「済」なら日付が必須、「未」なら日付を持たない', () => {
     const db = buildSeed(NOW)
-    const leader = findEmployee(db, '10123')!
+    const leader = findEmployee(db, '52035')!
     const r = db.requests.find((x) => x.number === 'R2026-0119')!
     const base = {
       assignees: r.assignees, ratios: r.ratios, meetingDone: true, meetingDate: '2026-10-20', estimateDone: true, estimateDate: '2026-10-21',
@@ -157,12 +157,12 @@ describe('進捗と成果', () => {
 
   it('一般の設備メンバーは担当していない依頼の買い入れを更新できない', () => {
     const db = buildSeed(NOW)
-    const r = db.requests.find((x) => x.number === 'R2026-0115')! // 担当は伊藤
-    const sasaki = findEmployee(db, '10245')!
-    const ito = findEmployee(db, '10123')!
-    expect(canEditField('purchase', sasaki, r)).toBe(false)
-    expect(canEditField('meeting', sasaki, r)).toBe(false)
-    expect(canEditField('purchase', ito, r)).toBe(true)
+    const r = db.requests.find((x) => x.number === 'R2026-0115')! // 担当は斎藤（設備班長）
+    const nomura = findEmployee(db, '54414')! // 設備メンバー（担当していない）
+    const saito = findEmployee(db, '52035')!
+    expect(canEditField(db, 'purchase', nomura, r)).toBe(false)
+    expect(canEditField(db, 'meeting', nomura, r)).toBe(false)
+    expect(canEditField(db, 'purchase', saito, r)).toBe(true)
   })
 
   it('従業員番号は数字5桁（社員データCSV）', () => {
@@ -185,28 +185,28 @@ describe('進捗と成果', () => {
 
   it('担当者は2人以上（5人まで）登録でき、配分の合計は100％', () => {
     const db = buildSeed(NOW)
-    const leader = findEmployee(db, '10123')!
+    const leader = findEmployee(db, '52035')!
     const r = db.requests.find((x) => x.number === 'R2026-0121')!
     const base = {
       assignees: [] as string[], ratios: [] as number[], meetingDone: false, meetingDate: null, estimateDone: false, estimateDate: null,
       purchaseDone: false, purchaseDate: null, progress: 0, productionDate: null, deliveryDate: null, contribution: null,
     }
-    const team = ['10123', '10245', '10310', '10501']
+    const team = ['52035', '38660', '54414', '79306']
     expect(() => saveProgress(db, r.id, leader, { ...base, assignees: team, ratios: [25, 25, 25, 20] }, NOW)).toThrow('合計が100')
     const out = saveProgress(db, r.id, leader, { ...base, assignees: team, ratios: [25, 25, 25, 25] }, NOW)
     expect(out.mails.filter((m) => m.type === 'M07')).toHaveLength(4)
     expect(r.assignees).toEqual(team)
-    expect(() => saveProgress(db, r.id, leader, { ...base, assignees: [...team, '10050', '10520'], ratios: [20, 20, 20, 20, 10, 10] }, NOW)).toThrow('5人まで')
-    expect(() => saveProgress(db, r.id, leader, { ...base, assignees: ['10123', '10123'], ratios: [50, 50] }, NOW)).toThrow('同じ人')
+    expect(() => saveProgress(db, r.id, leader, { ...base, assignees: [...team, '28316', '22056'], ratios: [20, 20, 20, 20, 10, 10] }, NOW)).toThrow('5人まで')
+    expect(() => saveProgress(db, r.id, leader, { ...base, assignees: ['52035', '52035'], ratios: [50, 50] }, NOW)).toThrow('同じ人')
   })
 
   it('年度集計に依頼書以外の作業を含める／外す', () => {
     const db = buildSeed(NOW)
     const withOther = contributionRows(db, { kind: 'fy', year: 2026 }, true)
     const withoutOther = contributionRows(db, { kind: 'fy', year: 2026 }, false)
-    const ito = (rows: typeof withOther) => rows.find((r) => r.employeeId === '10123')!
-    expect(ito(withOther).total).toBeGreaterThan(ito(withoutOther).total)
-    expect(ito(withoutOther).otherAmount).toBe(0)
+    const saito = (rows: typeof withOther) => rows.find((r) => r.employeeId === '52035')!
+    expect(saito(withOther).total).toBeGreaterThan(saito(withoutOther).total)
+    expect(saito(withoutOther).otherAmount).toBe(0)
   })
 
   it('毎朝の処理：2日でリマインド(M12)、3日以上で承認停滞(M09)、納期フォロー(M08)', () => {
@@ -215,5 +215,64 @@ describe('進捗と成果', () => {
     expect(types).toContain('M12')
     expect(types).toContain('M09')
     expect(types).toContain('M08')
+  })
+})
+
+describe('権限は所属部署・役職から自動で決まる', () => {
+  it('設備係＝設備メンバー、班長＝リーダー（設備班長）、組長・工長・課長＝管理者', () => {
+    const db = buildSeed(NOW)
+    const label = (id: string) => roleLabel(db, findEmployee(db, id)!)
+    expect(label('54414')).toBe('設備メンバー')
+    expect(label('79306')).toBe('設備メンバー')
+    expect(label('52035')).toBe('設備班長')
+    expect(label('38660')).toBe('設備班長')
+    expect(label('28316')).toBe('設備組長')
+    expect(label('49442')).toBe('設備組長')
+    expect(label('22056')).toBe('設備工長')
+    expect(label('22668')).toBe('設備課長')
+    expect(label('30258')).toBe('IT担当者')
+    expect(label('29446')).toBe('一般')
+    const r = (id: string) => rolesOf(db, findEmployee(db, id)!)
+    expect(r('52035')).toEqual({ equipment: true, leader: true, manager: false, it: false })
+    expect(r('22668')).toEqual({ equipment: true, leader: false, manager: true, it: false })
+    // 設備係以外の課長・組長は一般の社員
+    expect(r('20112')).toEqual({ equipment: false, leader: false, manager: false, it: false })
+    expect(r('20110')).toEqual({ equipment: false, leader: false, manager: false, it: false })
+  })
+
+  it('IT担当者は設備係でなくても設備側の画面・設定を使え、パスワードでログインする。担当者には選べない', () => {
+    const db = buildSeed(NOW)
+    const it = findEmployee(db, '30258')!
+    expect([isEquipment(db, it), canUseEquipment(db, it), isLeaderPlus(db, it), isAdmin(db, it), needsPassword(db, it)]).toEqual([false, true, true, true, true])
+    const tsuruoka = findEmployee(db, '29446')!
+    expect([canUseEquipment(db, tsuruoka), needsPassword(db, tsuruoka)]).toEqual([false, false])
+    const leader = findEmployee(db, '52035')!
+    const r = db.requests.find((x) => x.number === 'R2026-0121')!
+    const base = {
+      assignees: ['30258'], ratios: [100], meetingDone: false, meetingDate: null, estimateDone: false, estimateDate: null,
+      purchaseDone: false, purchaseDate: null, progress: 0, productionDate: null, deliveryDate: null, contribution: null,
+    }
+    expect(() => saveProgress(db, r.id, leader, base, NOW)).toThrow('設備メンバーから')
+  })
+
+  it('社員データの取り込みで設備係へ異動・昇格すると、権限も自動で変わる', () => {
+    const db = buildSeed(NOW)
+    const head = '従業員番号,氏名,氏名カナ,部署コード,部署名,役職,メールアドレス'
+    const rows = db.employees.filter((e) => e.active).map((e) => {
+      const d = db.departments.find((x) => x.id === e.deptId)!
+      if (e.id === '20410') return `${e.empNo},${e.name},${e.kana},2010,設備係,担当,${e.email}` // 物流課 → 設備係
+      if (e.id === '79306') return `${e.empNo},${e.name},${e.kana},${d.code},${d.name},班長,${e.email}` // 担当 → 班長
+      return `${e.empNo},${e.name},${e.kana},${d.code},${d.name},${e.position},${e.email}`
+    })
+    const pv = previewImport(db, [head, ...rows].join('\n'))
+    expect(pv.changed.find((c) => c.row.empNo === '20410')!.changes).toContain('権限 一般 → 設備メンバー')
+    expect(pv.changed.find((c) => c.row.empNo === '79306')!.changes).toContain('権限 設備メンバー → 設備班長')
+    // アプリでは確認後に複製した db へ反映する（store の run）。複製先でも変わることを確かめる
+    const next = structuredClone(db)
+    applyImport(next, pv, 'test.csv', findEmployee(next, '28316')!, NOW)
+    expect(roleLabel(db, findEmployee(db, '20410')!)).toBe('一般') // 元の db はそのまま
+    const ishii = findEmployee(next, '20410')!
+    expect([roleLabel(next, ishii), needsPassword(next, ishii), ishii.password]).toEqual(['設備メンバー', true, null])
+    expect(roleLabel(next, findEmployee(next, '79306')!)).toBe('設備班長')
   })
 })

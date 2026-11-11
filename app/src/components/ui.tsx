@@ -4,7 +4,7 @@ import {
   AlertTriangle, Check, CheckCircle2, ChevronRight, CircleDot, FileText, Flag, Info, Mail, Search, ShieldCheck, Undo2, X, XCircle,
 } from 'lucide-react'
 import type { Employee, WorkRequest } from '../domain/types'
-import { STATUS_TONE, currentRoundSteps, deptName, roleTone, statusShort, statusText } from '../domain/rules'
+import { STATUS_TONE, currentRoundSteps, deptName, roleNames, roleTone, statusShort, statusText } from '../domain/rules'
 import { fmtMDHM, fileSizeLabel } from '../domain/format'
 import { useApp } from '../store'
 import emptyImg from '../assets/img/empty_state.webp'
@@ -103,8 +103,9 @@ export function Empty({ title, desc, img = emptyImg, action }: { title: string; 
 const ROLE_COLOR = { requester: 'var(--role-requester)', equipment: 'var(--role-equipment)', admin: 'var(--role-admin)' }
 
 export function Avatar({ emp, name, size, color }: { emp?: Employee | null; name?: string; size?: 'sm' | 'lg'; color?: string }) {
+  const db = useApp((s) => s.db)
   const n = emp?.name ?? name ?? '?'
-  const c = color ?? (emp ? ROLE_COLOR[roleTone(emp)] : 'var(--cyan)')
+  const c = color ?? (emp ? ROLE_COLOR[roleTone(db, emp)] : 'var(--cyan)')
   return (
     <span className={`avatar ${size ?? ''}`} style={{ ['--c' as string]: c }}>
       {n.slice(0, 1)}
@@ -113,11 +114,9 @@ export function Avatar({ emp, name, size, color }: { emp?: Employee | null; name
 }
 
 export function RoleTags({ emp }: { emp: Employee }) {
-  const tags: [string, string][] = []
-  if (emp.roles.equipment) tags.push(['設備', 'role-equipment'])
-  if (emp.roles.leader) tags.push(['リーダー', 'role-equipment'])
-  if (emp.roles.manager) tags.push(['管理者', 'role-admin'])
-  if (emp.roles.it) tags.push(['IT担当者', 'role-admin'])
+  // 権限は所属部署・役職から自動で決まる（設備メンバー／設備班長／設備組長…）。IT担当者だけはユーザー管理で付ける
+  const db = useApp((s) => s.db)
+  const tags: [string, string][] = roleNames(db, emp).map((n) => [n, n === '設備メンバー' || n === '設備班長' ? 'role-equipment' : 'role-admin'])
   if (!tags.length) tags.push(['一般', 'role-requester'])
   return (
     <span className="row gap-4 wrap">

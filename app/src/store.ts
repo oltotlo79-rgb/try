@@ -1,6 +1,6 @@
 // アプリ全体の状態（メモリ上のみ。再起動でサンプルデータに戻る）
 import { create } from 'zustand'
-import type { DB, Employee, Mail, OtherWork, Roles, WorkRequest } from './domain/types'
+import type { DB, Employee, Mail, OtherWork, WorkRequest } from './domain/types'
 import { setRequestNumberResolver, type Route } from './router'
 import { buildSeed } from './data/seed'
 import { createDraft } from './domain/requests'
@@ -10,7 +10,7 @@ import {
 } from './domain/workflow'
 import { canViewInquiry, createInquiry, postInquiryMessage, resolveInquiry, type NewInquiry } from './domain/inquiries'
 import { applyImport, type ImportPreview } from './domain/importer'
-import { findEmployee, isAdmin, isEquipment, snapOf, MAX_DRAWINGS } from './domain/rules'
+import { canUseEquipment, findEmployee, isAdmin, needsPassword, snapOf, MAX_DRAWINGS } from './domain/rules'
 import { newId } from './domain/ids'
 import { readTitleBlock, validateDrawingJson } from './data/drawings'
 
@@ -86,7 +86,8 @@ interface State {
   adminCancel: (reqId: string) => boolean
   adminEditRequest: (reqId: string, patch: Partial<Pick<WorkRequest, 'title' | 'description' | 'dueDate'>>) => boolean
 
-  setRoles: (empId: string, roles: Roles) => boolean
+  /** IT担当者権限を付ける・外す（ほかの権限は所属部署・役職から自動で決まる） */
+  setIT: (empId: string, on: boolean) => boolean
   resetPassword: (empId: string) => boolean
   applyImport: (pv: ImportPreview, fileName: string) => boolean
   addTarget: (employeeId: string, active: boolean) => boolean
@@ -183,7 +184,7 @@ export const useApp = create<State>((set, get) => {
       const e = get().db.employees.find((x) => x.empNo === no)
       if (!e) return 'この従業員番号は登録されていません'
       if (!e.active) return 'この従業員番号は無効になっています（退職など）'
-      if (isEquipment(e)) {
+      if (needsPassword(get().db, e)) {
         set({ loginEmpNo: no, route: { s: 'S02' } })
         return null
       }
@@ -199,7 +200,8 @@ export const useApp = create<State>((set, get) => {
         const min = Math.ceil((e.lockedUntil - now) / 60000)
         return `パスワードを5回続けて間違えたため、あと${min}分間ログインできません`
       }
-      if (password !== e.password) {
+      // パスワード未設定（異動で設備係になった・IT担当者権限を付けた直後など）は従業員番号が初期パスワード
+      if (password !== (e.password ?? e.empNo)) {
         e.failedCount += 1
         let msg = `パスワードが違います。あと${Math.max(0, 5 - e.failedCount)}回間違えると15分間ログインできなくなります。`
         if (e.failedCount >= 5) {
@@ -223,7 +225,7 @@ export const useApp = create<State>((set, get) => {
     changePassword: (current, next, confirm) => {
       const u = me()
       if (!u) return 'ログインしてください'
-      if (current !== u.password) return '現在のパスワードが違います'
+      if (current !== (u.password ?? u.empNo)) return '現在のパスワードが違います'
       if (next.length < 8 || !/[A-Za-z]/.test(next) || !/\d/.test(next)) return '8文字以上で、英字と数字を両方含めてください'
       if (next === u.empNo) return '従業員番号と同じものは使えません'
       if (next !== confirm) return '確認用のパスワードが一致しません'
@@ -318,17 +320,11 @@ export const useApp = create<State>((set, get) => {
         Object.assign(r, patch)
         r.history.push({ at: now, actor: u!.name, action: '依頼書を編集（管理者）' })
       }, '保存しました'),
-    setRoles: (empId, roles) =>
+    setIT: (empId, on) =>
       run((db, _now, u) => {
         const e = db.employees.find((x) => x.id === empId)!
-        if (u && u.id === empId && ((u.roles.manager && !roles.manager) || (u.roles.it && !roles.it)))
-          throw new RuleError('自分自身の管理者・IT担当者権限は外せません')
-        const becameEquipment = !e.roles.equipment && roles.equipment
-        e.roles = roles
-        if (becameEquipment && !e.password) {
-          e.password = e.empNo
-          e.passwordChanged = false
-        }
+        if (u && u.id === empId && e.it && !on) throw new RuleError('自分自身のIT担当者権限は外せません')
+        e.it = on
       }, '権限を保存しました'),
     resetPassword: (empId) =>
       run((db) => {
@@ -424,8 +420,8 @@ export const useApp = create<State>((set, get) => {
       const ok =
         !!u &&
         (target.s === 'S11' ? db.requests.find((r) => r.id === target.reqId)?.requester.employeeId === u.id
-          : target.s === 'S15' ? isEquipment(u)
-          : target.s === 'S27' ? isAdmin(u)
+          : target.s === 'S15' ? canUseEquipment(db, u)
+          : target.s === 'S27' ? isAdmin(db, u)
           : canViewInquiry(db.inquiries.find((q) => q.id === (target as { inqId: string }).inqId)!, u))
       if (ok) {
         set({ view: 'system' })

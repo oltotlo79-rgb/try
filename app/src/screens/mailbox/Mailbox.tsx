@@ -7,6 +7,7 @@ import type { Mail } from '../../domain/types'
 import { MAIL_FROM, mailName } from '../../domain/mails'
 import { fmtDateTime, fmtMD } from '../../domain/format'
 import { Avatar, Badge, Empty } from '../../components/ui'
+import { canUseEquipment } from '../../domain/rules'
 import banner from '../../assets/img/mail_banner.webp'
 import emptyImg from '../../assets/img/mailbox_empty.webp'
 import './mailbox.css'
@@ -79,7 +80,7 @@ export default function Mailbox() {
             const e = db.employees.find((x) => x.id === b.id)
             return (
               <button key={b.id} className={`mb-box ${box === b.id ? 'on' : ''}`} onClick={() => selectMailBox(b.id)}>
-                <Avatar emp={e} name={b.name} size="sm" color={e && (e.roles.equipment || e.roles.manager || e.roles.it) ? undefined : 'var(--role-approver)'} />
+                <Avatar emp={e} name={b.name} size="sm" color={e && canUseEquipment(db, e) ? undefined : 'var(--role-approver)'} />
                 <span className="grow">
                   <span className="mb-box-name">{b.name}</span>
                   <span className="mb-box-sub">{e?.position}・{db.departments.find((d) => d.id === e?.deptId)?.name}</span>

@@ -5,7 +5,7 @@ import {
 } from 'lucide-react'
 import { useApp, useMe } from '../store'
 import { routePath, type Route } from '../router'
-import { deptName, isAdmin, isEquipment, isIT, isLeaderPlus, pendingStep, roleLabel } from '../domain/rules'
+import { canUseEquipment, deptName, isAdmin, isIT, isLeaderPlus, needsPassword, pendingStep, roleLabel, roleNames } from '../domain/rules'
 import { BASE_URL } from '../domain/rules'
 import { elapsedDays } from '../domain/format'
 import { Avatar } from './ui'
@@ -66,18 +66,18 @@ export function Shell({ children }: { children: ReactNode }) {
         <Item k="new" icon={FilePlus2} label="依頼する" onClick={() => useApp.getState().newDraft()} />
         <Item k="my" icon={ClipboardList} label="自分の依頼" count={returned} onClick={() => go({ s: 'S10' })} />
         <Item k="inquiry" icon={MessageCircleQuestion} label="問い合わせ" count={isIT(me) ? openInq : 0} onClick={() => go({ s: 'S18' })} />
-        {isEquipment(me) && (
+        {canUseEquipment(db, me) && (
           <>
             <div className="side-group"><i style={{ background: 'var(--role-equipment)' }} />設備メンバー</div>
-            <Item k="list" icon={LayoutList} label="依頼書一覧" count={isLeaderPlus(me) ? unassigned : 0} onClick={() => go({ s: 'S14' })} />
+            <Item k="list" icon={LayoutList} label="依頼書一覧" count={isLeaderPlus(db, me) ? unassigned : 0} onClick={() => go({ s: 'S14' })} />
             <Item k="progress" icon={Timer} label="作業進捗" onClick={() => go({ s: 'S16' })} />
             <Item k="results" icon={BarChart3} label="成果確認" onClick={() => go({ s: 'S17' })} />
             <Item k="analytics" icon={ChartLine} label="データ分析" onClick={() => go({ s: 'S28' })} />
           </>
         )}
-        {isAdmin(me) && (
+        {isAdmin(db, me) && (
           <>
-            <div className="side-group"><i style={{ background: 'var(--role-admin)' }} />管理者・IT担当者</div>
+            <div className="side-group"><i style={{ background: 'var(--role-admin)' }} />設備組長以上・IT担当者</div>
             <Item k="settings" icon={Settings} label="設定" count={stalled} onClick={() => go({ s: 'S21' })} />
           </>
         )}
@@ -86,10 +86,10 @@ export function Shell({ children }: { children: ReactNode }) {
             <Avatar emp={me} />
             <div className="grow">
               <b>{me.name}</b>
-              <small>{deptName(db, me.deptId)}・{roleLabel(me)}</small>
+              <small>{deptName(db, me.deptId)}・{roleLabel(db, me)}</small>
             </div>
           </div>
-          {isEquipment(me) && (
+          {needsPassword(db, me) && (
             <button className="nav-item mt-8" onClick={() => go({ s: 'S03' })}>
               <KeyRound /> パスワード変更
             </button>
@@ -104,7 +104,7 @@ export function Shell({ children }: { children: ReactNode }) {
           <UrlBar route={route} />
           <span className="grow" />
           <span className="small tx-2 nowrap">
-            {me.name}（{deptName(db, me.deptId)}{isEquipment(me) ? `・${roleLabel(me)}` : ''}）
+            {me.name}（{deptName(db, me.deptId)}{roleNames(db, me).length ? `・${roleLabel(db, me)}` : ''}）
           </span>
           <button className="btn btn-sm" onClick={() => go({ s: 'S04' })}><Home /> メニュー</button>
           <button className="btn btn-sm btn-ghost" onClick={() => useApp.getState().logout()}><LogOut /> ログアウト</button>

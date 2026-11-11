@@ -52,7 +52,7 @@ export default function S17Results({ route }: { route: RouteOf<'S17'> }) {
   const rows: ContributionRow[] = useMemo(() => {
     const got = contributionRows(db, period, includeOther)
     // 実績のない設備メンバーも0円で並べる（比較のため）
-    for (const e of db.employees.filter((x) => isEquipment(x) && x.active)) {
+    for (const e of db.employees.filter((x) => isEquipment(db, x) && x.active)) {
       if (!got.some((r) => r.employeeId === e.id))
         got.push({ employeeId: e.id, name: e.name, reqCount: 0, reqAmount: 0, otherCount: 0, otherAmount: 0, total: 0 })
     }

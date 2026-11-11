@@ -33,7 +33,7 @@ export default function S16Progress({ route }: { route: RouteOf<'S16'> }) {
   const [scope, setScope] = useState<Scope>('active')
   const now = Date.now()
 
-  const members = useMemo(() => db.employees.filter((e) => isEquipment(e) && e.active), [db])
+  const members = useMemo(() => db.employees.filter((e) => isEquipment(db, e) && e.active), [db])
 
   const rowsOf = (e: Employee): Row[] => {
     const rows: Row[] = []
@@ -139,7 +139,7 @@ export default function S16Progress({ route }: { route: RouteOf<'S16'> }) {
                         r.kind === 'req' ? (
                           <ReqRow key={r.key} row={r} now={now} onOpen={() => go({ s: 'S15', reqId: r.req!.id })} />
                         ) : (
-                          <OtherRow key={r.key} row={r} editable={r.work!.assignees.includes(me.id) || isLeaderPlus(me)} />
+                          <OtherRow key={r.key} row={r} editable={r.work!.assignees.includes(me.id) || isLeaderPlus(db, me)} />
                         ),
                       )}
                     </tbody>

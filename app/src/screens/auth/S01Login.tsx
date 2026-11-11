@@ -1,4 +1,4 @@
-// S01 ログイン：従業員番号を入力する。一般の社員はそのままメニュー、設備メンバーはパスワード入力へ
+// S01 ログイン：従業員番号を入力する。一般の社員はそのままメニュー、設備メンバー・IT担当者はパスワード入力へ
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Info, KeyRound, MailOpen } from 'lucide-react'
 import type { RouteOf } from '../../router'
@@ -6,16 +6,10 @@ import { useApp } from '../../store'
 import { Avatar, Field } from '../../components/ui'
 import { AuthLayout } from './AuthLayout'
 import { DEMO_PASSWORD } from '../../data/seed'
+import { deptName, needsPassword, roleNames, roleTone } from '../../domain/rules'
 
-const DEMO: [empNo: string, role: string, tone: string][] = [
-  ['20101', '依頼者', 'role-requester'],
-  ['20215', '依頼者', 'role-requester'],
-  ['10123', '設備リーダー', 'role-equipment'],
-  ['10245', '設備メンバー', 'role-equipment'],
-  ['10050', '管理者', 'role-admin'],
-  ['10310', 'IT担当者', 'role-admin'],
-  ['10501', '初回ログイン', 'role-equipment'],
-]
+/** デモ用アカウント（表示する権限は所属部署・役職から自動で決まる） */
+const DEMO = ['54414', '79306', '52035', '38660', '28316', '49442', '22056', '22668', '30258', '29446']
 
 export default function S01Login({ route }: { route: RouteOf<'S01'> }) {
   const db = useApp((s) => s.db)
@@ -65,26 +59,27 @@ export default function S01Login({ route }: { route: RouteOf<'S01'> }) {
       <div className="demo-accounts">
         <div className="section-label">デモ用アカウント（クリックでログイン）</div>
         <div className="demo-grid">
-          {DEMO.map(([no, role, tone]) => {
+          {DEMO.map((no) => {
             const e = db.employees.find((x) => x.empNo === no)!
+            const names = roleNames(db, e)
             return (
               <button key={no} className="demo-card" onClick={() => { setEmpNo(no); submit(no) }}>
                 <Avatar emp={e} size="sm" />
                 <div className="grow">
                   <b>{e.name}</b>
                   <small>
-                    <span className={`role-tag ${tone}`}>{role}</span>
+                    <span className={`role-tag role-${roleTone(db, e)}`}>{names.length ? names.join('・') : deptName(db, e.deptId)}</span>
                     <span className="mono">{no}</span>
                   </small>
                 </div>
-                {e.roles.equipment && <KeyRound size={14} className="tx-3" />}
+                {needsPassword(db, e) && <KeyRound size={14} className="tx-3" />}
               </button>
             )
           })}
         </div>
         <p className="hint mt-8">
-          設備メンバーのパスワードは <span className="mono tx-cyan">{DEMO_PASSWORD}</span>（初回ログインの渡辺 六郎は従業員番号）。
-          承認者（課長・回覧先など）はログインせず、メールBOXのURLから承認します。
+          設備メンバー・IT担当者のパスワードは <span className="mono tx-cyan">{DEMO_PASSWORD}</span>。
+          安全衛生Gの鶴岡 幸一は一般の社員（依頼者）のため、パスワード不要です。承認者（課長・回覧先など）はログインせず、メールBOXのURLから承認します。
         </p>
       </div>
     </AuthLayout>

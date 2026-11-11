@@ -1,5 +1,5 @@
 // 権限・状態表示・参照のための小さな関数群（要件「3_利用者と権限」「5_状態と承認ルール」）
-import type { ApprovalStep, DB, Employee, PersonSnap, RequestStatus, WorkRequest } from './types'
+import type { ApprovalStep, DB, Employee, PersonSnap, RequestStatus, Roles, WorkRequest } from './types'
 import { daysUntil } from './format'
 
 export const APP_NAME = '制作物依頼システム'
@@ -16,26 +16,69 @@ export function equalRatios(n: number): number[] {
   return Array.from({ length: n }, (_, i) => base + (i < 100 - base * n ? 1 : 0))
 }
 
-export const isEquipment = (e: Employee | null | undefined) => !!e?.roles.equipment
-export const isLeaderPlus = (e: Employee | null | undefined) =>
-  !!e && (e.roles.leader || e.roles.manager || e.roles.it)
-export const isAdmin = (e: Employee | null | undefined) => !!e && (e.roles.manager || e.roles.it)
-export const isIT = (e: Employee | null | undefined) => !!e?.roles.it
+// ── 権限（要件「3_利用者と権限」）──
+// 設備メンバー・リーダー・管理者は社員データ（所属部署・役職）から自動で決まる。ユーザー管理で付けるのはIT担当者だけ。
+/** この部署に所属する社員は自動で設備メンバーになる */
+export const EQUIPMENT_DEPT = '設備係'
+/** 設備メンバーのうち、この役職の人はリーダー権限（表示：設備班長） */
+export const LEADER_POSITIONS = ['班長']
+/** 設備メンバーのうち、この役職の人は管理者権限（表示：設備組長・設備工長・設備課長） */
+export const MANAGER_POSITIONS = ['組長', '工長', '課長']
 
-/** 「設備・リーダー」のような権限の表示 */
-export function roleLabel(e: Employee): string {
-  const parts: string[] = []
-  if (e.roles.equipment) parts.push('設備')
-  if (e.roles.leader) parts.push('リーダー')
-  if (e.roles.manager) parts.push('管理者')
-  if (e.roles.it) parts.push('IT担当者')
-  return parts.length ? parts.join('・') : '一般'
+type Emp = Employee | null | undefined
+
+export const isEquipmentDept = (db: DB, deptId: string) => db.departments.find((d) => d.id === deptId)?.name === EQUIPMENT_DEPT
+
+/** 部署名・役職・IT担当者フラグから権限を求める（社員データ取り込みの確認でも使う） */
+export function rolesFor(dept: string | undefined, position: string, it: boolean): Roles {
+  const equipment = dept === EQUIPMENT_DEPT
+  return {
+    equipment,
+    leader: equipment && LEADER_POSITIONS.includes(position),
+    manager: equipment && MANAGER_POSITIONS.includes(position),
+    it,
+  }
+}
+
+/** 社員の権限（所属部署・役職・IT担当者フラグから求める。保存はしない） */
+export function rolesOf(db: DB, e: Employee): Roles {
+  return rolesFor(db.departments.find((d) => d.id === e.deptId)?.name, e.position, e.it)
+}
+
+/** 「設備班長」「設備メンバー」「IT担当者」のような表示名 */
+export function roleNamesFor(r: Roles, position: string): string[] {
+  const names: string[] = []
+  if (r.equipment) names.push(r.leader || r.manager ? `設備${position}` : '設備メンバー')
+  if (r.it) names.push('IT担当者')
+  return names
+}
+
+/** 設備メンバー（担当者に選べる人） */
+export const isEquipment = (db: DB, e: Emp) => !!e && isEquipmentDept(db, e.deptId)
+/** 依頼書一覧・作業進捗・成果確認など設備側の画面を使える人（設備メンバーとIT担当者） */
+export const canUseEquipment = (db: DB, e: Emp) => !!e && (e.it || isEquipment(db, e))
+export const isLeaderPlus = (db: DB, e: Emp) => {
+  if (!e) return false
+  const r = rolesOf(db, e)
+  return r.leader || r.manager || r.it
+}
+export const isManager = (db: DB, e: Emp) => !!e && rolesOf(db, e).manager
+export const isAdmin = (db: DB, e: Emp) => !!e && (e.it || rolesOf(db, e).manager)
+export const isIT = (e: Emp) => !!e?.it
+/** パスワードでログインする人（設備メンバーとIT担当者） */
+export const needsPassword = (db: DB, e: Emp) => canUseEquipment(db, e)
+
+export const roleNames = (db: DB, e: Employee) => roleNamesFor(rolesOf(db, e), e.position)
+
+export function roleLabel(db: DB, e: Employee): string {
+  const n = roleNames(db, e)
+  return n.length ? n.join('・') : '一般'
 }
 
 /** 画面の色分けに使う役割（要件の色：緑=依頼者 青=設備 紫=管理者・IT） */
-export function roleTone(e: Employee): 'requester' | 'equipment' | 'admin' {
-  if (isAdmin(e)) return 'admin'
-  if (isEquipment(e)) return 'equipment'
+export function roleTone(db: DB, e: Employee): 'requester' | 'equipment' | 'admin' {
+  if (isAdmin(db, e)) return 'admin'
+  if (isEquipment(db, e)) return 'equipment'
   return 'requester'
 }
 
@@ -153,14 +196,15 @@ export const isAssignee = (req: WorkRequest, userId: string) => req.assignees.in
 
 /** S15 の項目ごとの入力可否（要件 S15「入力ルール・権限」） */
 export function canEditField(
+  db: DB,
   field: 'assignees' | 'meeting' | 'contribution' | 'estimate' | 'purchase' | 'progress' | 'production' | 'delivery',
   user: Employee,
   req: WorkRequest,
 ): boolean {
   if (req.status === 'cancelled' || req.status === 'circulating' || req.status === 'returned' || req.status === 'pulledBack')
     return false
-  if (field === 'assignees' || field === 'meeting' || field === 'contribution') return isLeaderPlus(user)
-  return isLeaderPlus(user) || (isEquipment(user) && isAssignee(req, user.id))
+  if (field === 'assignees' || field === 'meeting' || field === 'contribution') return isLeaderPlus(db, user)
+  return isLeaderPlus(db, user) || (isEquipment(db, user) && isAssignee(req, user.id))
 }
 
 /** 依頼者が引き戻せるか（回覧中のみ） */

@@ -1,22 +1,20 @@
-// S22 ユーザー管理：社員データから取り込んだ社員に権限を付ける。設備メンバーのパスワードを初期化する
+// S22 ユーザー管理：権限（所属部署・役職から自動で決まる）を確認し、IT担当者権限を付ける。パスワードを初期化する
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, KeyRound, Lock, Pencil, RotateCcw, Save, Search, ShieldCheck, UserCog } from 'lucide-react'
+import { ArrowLeft, Check, KeyRound, Lock, Minus, Pencil, RotateCcw, Save, Search, ShieldCheck, UserCog } from 'lucide-react'
 import type { RouteOf } from '../../router'
 import type { Employee, Roles } from '../../domain/types'
 import { useApp, useMe } from '../../store'
-import { deptName, isAdmin } from '../../domain/rules'
+import { EQUIPMENT_DEPT, LEADER_POSITIONS, MANAGER_POSITIONS, deptName, isAdmin, needsPassword, roleNames, rolesOf } from '../../domain/rules'
 import { fmtDateTime } from '../../domain/format'
 import { Avatar, Badge, Empty, PageHead, Panel, RoleTags } from '../../components/ui'
 import './settings-c.css'
 
-const PERMS: { key: keyof Roles; label: string; desc: string }[] = [
-  { key: 'equipment', label: '設備メンバー', desc: '依頼書一覧・進捗更新・成果確認。付けるとパスワードでのログインになる' },
-  { key: 'leader', label: 'リーダー', desc: '担当者の割り当て、打ち合わせ・貢献額の入力' },
-  { key: 'manager', label: '管理者', desc: 'リーダーの操作に加えて、各種設定・代理承認' },
-  { key: 'it', label: 'IT担当者', desc: '管理者と同じ操作に加えて、問い合わせへの回答' },
+/** 社員データ（所属部署・役職）から自動で決まる権限 */
+const AUTO_PERMS: { key: keyof Roles; label: string; rule: string; desc: string }[] = [
+  { key: 'equipment', label: '設備メンバー', rule: `所属部署が「${EQUIPMENT_DEPT}」`, desc: '依頼書一覧・進捗更新・成果確認。パスワードでログインする' },
+  { key: 'leader', label: '設備班長（リーダー権限）', rule: `設備メンバーで役職が${LEADER_POSITIONS.join('・')}`, desc: '担当者の割り当て、打ち合わせ・貢献額の入力' },
+  { key: 'manager', label: '設備組長・設備工長・設備課長（管理者権限）', rule: `設備メンバーで役職が${MANAGER_POSITIONS.join('・')}`, desc: '設備班長の操作に加えて、各種設定・代理承認' },
 ]
-
-const hasAnyRole = (e: Employee) => e.roles.equipment || e.roles.leader || e.roles.manager || e.roles.it
 
 export default function S22Users({ route }: { route: RouteOf<'S22'> }) {
   void route
@@ -24,27 +22,27 @@ export default function S22Users({ route }: { route: RouteOf<'S22'> }) {
   const db = useApp((s) => s.db)
   const go = useApp((s) => s.go)
   const ask = useApp((s) => s.ask)
-  const setRoles = useApp((s) => s.setRoles)
+  const setIT = useApp((s) => s.setIT)
   const resetPassword = useApp((s) => s.resetPassword)
   const [q, setQ] = useState('')
   const [onlyRoles, setOnlyRoles] = useState(true)
   const [applied, setApplied] = useState({ q: '', onlyRoles: true })
-  const [selId, setSelId] = useState<string | null>('10501')
+  const [selId, setSelId] = useState<string | null>('52035')
   const sel = db.employees.find((e) => e.id === selId) ?? null
-  const [roles, setRolesDraft] = useState<Roles | null>(sel?.roles ?? null)
+  const [it, setItDraft] = useState<boolean>(sel?.it ?? false)
 
   useEffect(() => {
-    setRolesDraft(sel ? { ...sel.roles } : null)
-  }, [selId]) // eslint-disable-line react-hooks/exhaustive-deps
+    setItDraft(sel?.it ?? false)
+  }, [selId, sel?.it])
 
   const list = useMemo(() => {
     const k = applied.q.trim()
     return db.employees
-      .filter((e) => (!applied.onlyRoles || hasAnyRole(e)) && (!k || e.name.includes(k) || e.kana.includes(k) || e.empNo.includes(k) || deptName(db, e.deptId).includes(k)))
+      .filter((e) => (!applied.onlyRoles || roleNames(db, e).length > 0) && (!k || e.name.includes(k) || e.kana.includes(k) || e.empNo.includes(k) || deptName(db, e.deptId).includes(k)))
       .sort((a, b) => Number(b.active) - Number(a.active) || a.empNo.localeCompare(b.empNo))
   }, [db, applied])
 
-  if (!isAdmin(me)) {
+  if (!isAdmin(db, me)) {
     return (
       <div className="page">
         <PageHead sid="S22" en="USERS" title="ユーザー管理" />
@@ -55,27 +53,28 @@ export default function S22Users({ route }: { route: RouteOf<'S22'> }) {
 
   const now = Date.now()
   const isSelf = sel?.id === me.id
-  const dirty = !!sel && !!roles && PERMS.some((p) => sel.roles[p.key] !== roles[p.key])
-  const lockSelf = (k: keyof Roles) => isSelf && (k === 'manager' || k === 'it') && !!sel?.roles[k]
+  const dirty = !!sel && sel.it !== it
+  const lockSelfIT = isSelf && !!sel?.it
+  const autoRoles = sel ? rolesOf(db, sel) : null
 
   const pwState = (e: Employee) => {
-    if (!e.roles.equipment && !e.password) return { tone: 'muted', icon: <KeyRound />, text: 'パスワード不要（従業員番号だけでログイン）' }
+    if (!needsPassword(db, e)) return { tone: 'muted', icon: <KeyRound />, text: 'パスワード不要（従業員番号だけでログイン）' }
     if (e.lockedUntil && e.lockedUntil > now) return { tone: 'danger', icon: <Lock />, text: `ロック中（${fmtDateTime(e.lockedUntil).slice(11)} まで）` }
     if (!e.passwordChanged) return { tone: 'warn', icon: <KeyRound />, text: '未設定（初回ログイン前・パスワード＝従業員番号）' }
     return { tone: 'ok', icon: <ShieldCheck />, text: '設定済み' }
   }
 
   const save = async () => {
-    if (!sel || !roles) return
-    if (roles.equipment && !sel.roles.equipment) {
+    if (!sel) return
+    if (it && !needsPassword(db, sel)) {
       const ok = await ask({
-        title: '設備メンバー権限を付けますか？',
+        title: 'IT担当者権限を付けますか？',
         body: `${sel.name} さんは次回から従業員番号とパスワードでログインします。\n初めてのパスワードは従業員番号（${sel.empNo}）です。`,
         okLabel: '付けて保存',
       })
       if (!ok) return
     }
-    setRoles(sel.id, roles)
+    setIT(sel.id, it)
   }
 
   const reset = async () => {
@@ -95,7 +94,7 @@ export default function S22Users({ route }: { route: RouteOf<'S22'> }) {
         sid="S22"
         en="USER MANAGEMENT"
         title="ユーザー管理"
-        desc="社員データから取り込んだ社員に、設備メンバー・リーダー・管理者・IT担当者の権限を付けます。権限は重ねて付けられます。"
+        desc={`権限は社員データの所属部署・役職から自動で決まります（${EQUIPMENT_DEPT}の社員＝設備メンバー、そのうち班長＝設備班長、組長・工長・課長＝設備組長・設備工長・設備課長）。この画面で付けるのはIT担当者権限だけです。`}
         actions={<button className="btn" onClick={() => go({ s: 'S21' })}><ArrowLeft /> 設定メニューへ</button>}
       />
 
@@ -160,8 +159,8 @@ export default function S22Users({ route }: { route: RouteOf<'S22'> }) {
         </div>
 
         <div className="edit-card">
-          <Panel glow title={sel ? `権限の設定（選択中：${sel.name}）` : '権限の設定'} icon={<UserCog />}>
-            {!sel || !roles ? (
+          <Panel glow title={sel ? `権限の確認・設定（選択中：${sel.name}）` : '権限の確認・設定'} icon={<UserCog />}>
+            {!sel || !autoRoles ? (
               <Empty title="左の一覧から社員を選んでください" />
             ) : (
               <div className="col gap-16">
@@ -180,27 +179,37 @@ export default function S22Users({ route }: { route: RouteOf<'S22'> }) {
                 </div>
 
                 <div>
-                  <div className="section-label">権限</div>
+                  <div className="section-label">権限（所属部署・役職から自動）</div>
                   <div className="perm-list">
-                    {PERMS.map((p) => {
-                      const locked = lockSelf(p.key) || !sel.active
+                    {AUTO_PERMS.map((p) => {
+                      const on = autoRoles[p.key]
                       return (
-                        <label key={p.key} className={`perm ${roles[p.key] ? 'on' : ''} ${locked ? 'disabled' : ''}`}>
-                          <span className="check">
-                            <input
-                              type="checkbox"
-                              checked={roles[p.key]}
-                              disabled={locked}
-                              onChange={(e) => setRolesDraft({ ...roles, [p.key]: e.target.checked })}
-                            />
-                          </span>
-                          <span>
+                        <div key={p.key} className={`perm auto ${on ? 'on' : ''}`}>
+                          <span className={`perm-mark ${on ? 'on' : ''}`}>{on ? <Check /> : <Minus />}</span>
+                          <span className="grow">
                             <b>{p.label}</b>
-                            <small>{lockSelf(p.key) ? '自分自身の管理者・IT担当者権限は外せません' : p.desc}</small>
+                            <small>{p.desc}</small>
+                            <small className="perm-rule">条件：{p.rule}</small>
                           </span>
-                        </label>
+                        </div>
                       )
                     })}
+                  </div>
+                  <p className="hint mt-8">異動・昇格は、社員データ（CSV）を取り込むと自動で反映されます。</p>
+                </div>
+
+                <div>
+                  <div className="section-label">ユーザー管理で付ける権限</div>
+                  <div className="perm-list">
+                    <label className={`perm ${it ? 'on' : ''} ${lockSelfIT || !sel.active ? 'disabled' : ''}`}>
+                      <span className="check">
+                        <input type="checkbox" checked={it} disabled={lockSelfIT || !sel.active} onChange={(e) => setItDraft(e.target.checked)} />
+                      </span>
+                      <span>
+                        <b>IT担当者</b>
+                        <small>{lockSelfIT ? '自分自身のIT担当者権限は外せません' : '設定・代理承認に加えて、問い合わせへの回答。付けるとパスワードでのログインになる'}</small>
+                      </span>
+                    </label>
                   </div>
                 </div>
 
@@ -221,13 +230,13 @@ export default function S22Users({ route }: { route: RouteOf<'S22'> }) {
                 {!sel.active && <div className="notice warn">この社員は社員データで無効（退職など）のため、ログインできません。</div>}
 
                 <div className="row gap-6 mt-4">
-                  <button className="btn btn-warn" disabled={!sel.roles.equipment || !sel.active} onClick={reset}>
+                  <button className="btn btn-warn" disabled={!needsPassword(db, sel) || !sel.active} onClick={reset}>
                     <RotateCcw /> パスワード初期化
                   </button>
                   <span className="grow" />
                   <button className="btn btn-violet" disabled={!dirty} onClick={save}><Save /> 保存</button>
                 </div>
-                <p className="hint">権限とパスワードは、社員データを取り込み直しても変わりません。</p>
+                <p className="hint">IT担当者権限とパスワードは、社員データを取り込み直しても変わりません。</p>
               </div>
             )}
           </Panel>

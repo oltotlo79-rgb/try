@@ -2,7 +2,7 @@
 import { ArrowRight, Home, ShieldAlert } from 'lucide-react'
 import type { RouteOf, Route } from '../../router'
 import { useApp, useMe } from '../../store'
-import { findEmployee, isAdmin, pendingStep } from '../../domain/rules'
+import { findEmployee, isAdmin, isEquipment, needsPassword, pendingStep } from '../../domain/rules'
 import { elapsedDays, fmtDateTime } from '../../domain/format'
 import { Badge, Empty, PageHead, Panel } from '../../components/ui'
 import imgUsers from '../../assets/img/set_users.webp'
@@ -30,7 +30,7 @@ export default function S21SettingsMenu({ route }: { route: RouteOf<'S21'> }) {
   const go = useApp((s) => s.go)
   const now = Date.now()
 
-  if (!isAdmin(me)) {
+  if (!isAdmin(db, me)) {
     return (
       <div className="page">
         <PageHead sid="S21" en="SETTINGS" title="設定メニュー" />
@@ -46,17 +46,17 @@ export default function S21SettingsMenu({ route }: { route: RouteOf<'S21'> }) {
   const inactiveTargets = db.targets.filter((t) => !findEmployee(db, t.employeeId)?.active).length
   const activeTargets = db.targets.filter((t) => t.active).length
   const emptyDepts = db.departments.filter((d) => {
-    const hasMembers = db.employees.some((e) => e.active && e.deptId === d.id && !e.roles.equipment)
+    const hasMembers = db.employees.some((e) => e.active && e.deptId === d.id && !isEquipment(db, e))
     return d.active && hasMembers && d.reviewers.every((x) => !x)
   }).length
   const lockedUsers = db.employees.filter((e) => e.lockedUntil && e.lockedUntil > now).length
-  const firstLogin = db.employees.filter((e) => e.active && e.roles.equipment && !e.passwordChanged).length
+  const firstLogin = db.employees.filter((e) => e.active && needsPassword(db, e) && !e.passwordChanged).length
   const lastImport = db.importLogs[0]
   const activeOther = db.otherWorks.filter((w) => !w.completedDate).length
 
   const tiles: TileDef[] = [
     {
-      sid: 'S22', title: 'ユーザー管理', desc: '設備メンバー・リーダー・管理者・IT担当者の権限を付ける。パスワードを初期化する。',
+      sid: 'S22', title: 'ユーザー管理', desc: '権限（所属部署・役職から自動）を確認し、IT担当者権限を付ける。パスワードを初期化する。',
       img: imgUsers, to: { s: 'S22' }, path: '/settings/users',
       alerts: [
         ...(lockedUsers ? [{ tone: 'danger', text: `ロック中 ${lockedUsers}人` }] : []),

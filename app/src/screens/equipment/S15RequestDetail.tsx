@@ -59,7 +59,7 @@ export default function S15RequestDetail({ route }: { route: RouteOf<'S15'> }) {
     if (req && !form) setForm(patchFromReq(req))
   }, [req, form])
 
-  const members = useMemo(() => db.employees.filter((e) => isEquipment(e) && e.active), [db])
+  const members = useMemo(() => db.employees.filter((e) => isEquipment(db, e) && e.active), [db])
   // 図面：版ごとに保存されている。各図面（枚目）の最新版を表示
   const sheets = useMemoSheets(req?.drawings ?? NO_DRAWINGS)
 
@@ -76,12 +76,12 @@ export default function S15RequestDetail({ route }: { route: RouteOf<'S15'> }) {
   const base = patchFromReq(req)
   const dirty = JSON.stringify(form) !== JSON.stringify(base)
   const set = (p: Partial<ProgressPatch>) => setForm({ ...form, ...p })
-  const can = (f: Parameters<typeof canEditField>[0]) => canEditField(f, me, req)
-  const lockReason = (f: Parameters<typeof canEditField>[0]): string | null => {
+  const can = (f: Parameters<typeof canEditField>[1]) => canEditField(db, f, me, req)
+  const lockReason = (f: Parameters<typeof canEditField>[1]): string | null => {
     if (can(f)) return null
     if (['circulating', 'returned', 'pulledBack'].includes(req.status)) return '回覧完了後に入力できます'
     if (req.status === 'cancelled') return '取り下げられた依頼です'
-    return f === 'assignees' || f === 'meeting' || f === 'contribution' ? 'リーダー以上が入力できます' : '担当者とリーダー以上が入力できます'
+    return f === 'assignees' || f === 'meeting' || f === 'contribution' ? '設備班長以上が入力できます' : '担当者と設備班長以上が入力できます'
   }
   const ids = form.assignees.filter(Boolean)
   const multi = ids.length >= 2
@@ -149,7 +149,7 @@ export default function S15RequestDetail({ route }: { route: RouteOf<'S15'> }) {
         }
       />
 
-      {req.status === 'circulated' && isLeaderPlus(me) && (
+      {req.status === 'circulated' && isLeaderPlus(db, me) && (
         <div className="notice info" style={{ marginBottom: 16 }}>
           <Info />
           <span>回覧が完了し、打ち合わせ待ちの依頼です。担当者（複数人可）を決めて保存すると状態が「対応中」になり、担当者へ任命メール（M07）を送ります。</span>

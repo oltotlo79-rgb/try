@@ -82,3 +82,10 @@
 .diff-row .arrow { color: var(--info); }
 .timing { display: flex; gap: 12px; align-items: flex-start; }
 .timing svg { width: 18px; height: 18px; color: var(--violet); flex: none; margin-top: 2px; }
+/* S22：所属部署・役職から自動で決まる権限（読み取り専用） */
+.perm.auto { cursor: default; }
+.perm.auto.on { border-color: rgba(90, 169, 255, 0.4); background: rgba(90, 169, 255, 0.07); }
+.perm-mark { flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 6px; display: grid; place-items: center; border: 1px solid var(--line); color: var(--tx-3); }
+.perm-mark.on { border-color: rgba(90, 169, 255, 0.55); background: rgba(90, 169, 255, 0.18); color: var(--role-equipment); }
+.perm-mark svg { width: 13px; height: 13px; }
+.perm small.perm-rule { color: var(--tx-2); margin-top: 3px; }

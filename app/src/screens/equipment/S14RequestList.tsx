@@ -67,7 +67,7 @@ export default function S14RequestList({ route }: { route: RouteOf<'S14'> }) {
   const [page, setPage] = useState(0)
 
   const all = useMemo(() => db.requests.filter((r) => r.status !== 'draft' && r.number), [db])
-  const members = useMemo(() => db.employees.filter((e) => isEquipment(e) && e.active), [db])
+  const members = useMemo(() => db.employees.filter((e) => isEquipment(db, e) && e.active), [db])
   const depts = useMemo(() => [...new Set(all.map((r) => r.requester.dept))].sort(), [all])
   const months = useMemo(() => {
     const set = new Set<string>()

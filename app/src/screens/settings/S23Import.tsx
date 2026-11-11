@@ -39,7 +39,7 @@ export default function S23Import({ route }: { route: RouteOf<'S23'> }) {
   const [over, setOver] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  if (!isAdmin(me)) {
+  if (!isAdmin(db, me)) {
     return (
       <div className="page">
         <PageHead sid="S23" en="EMPLOYEE IMPORT" title="社員データの取り込み" />
@@ -78,9 +78,10 @@ export default function S23Import({ route }: { route: RouteOf<'S23'> }) {
 
   /** デモ用：今の社員データから少しだけ変えたCSVを作る */
   const loadSample = () => {
-    const active = db.employees.filter((e) => e.active && e.id !== '10520')
+    const active = db.employees.filter((e) => e.active && e.id !== '20510') // 退職
     const lines = employeesToCsv(db, active).split('\r\n')
-    const edited = lines.map((l) => (l.startsWith('10245,') ? l.replace(/,2010,設備課,/, ',2020,保全課,') : l))
+    // 物流課 → 設備係への異動（権限が自動で「設備メンバー」になる）
+    const edited = lines.map((l) => (l.startsWith('20410,') ? l.replace(/,1040,物流課,/, ',2010,設備係,') : l))
     edited.push('10601,新井 健,アライ ケン,1010,製造一課,担当,arai@example.co.jp')
     edited.push('10602,上田 翔,ウエダ ショウ,1020,製造二課,担当,')
     const text = edited.join('\r\n')
@@ -249,7 +250,8 @@ export default function S23Import({ route }: { route: RouteOf<'S23'> }) {
             <hr className="divider" />
             <ul className="small tx-2" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.9 }}>
               <li>CSVにいなくなった社員は削除せず「無効」にします。</li>
-              <li>権限とパスワードは、取り込み直しても変わりません。</li>
+              <li>設備メンバー・設備班長などの権限は、所属部署・役職に合わせて自動で変わります（変わる人は「変更」に表示）。</li>
+              <li>IT担当者権限とパスワードは、取り込み直しても変わりません。</li>
               <li>回覧者だった社員が無効になると、その部署の回覧者欄は空欄になります。</li>
             </ul>
           </Panel>
