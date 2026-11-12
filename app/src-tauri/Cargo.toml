@@ -1,7 +1,7 @@
 [package]
 name = "seisakubutsu-irai"
 version = "1.0.0"
-description = "制作物依頼システム サンプル"
+description = "製作物依頼システム サンプル"
 edition = "2021"
 
 [lib]

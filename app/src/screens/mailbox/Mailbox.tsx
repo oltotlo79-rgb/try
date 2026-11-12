@@ -109,7 +109,7 @@ export default function Mailbox() {
             <button key={m.id} className={`mb-item ${m.id === mailId ? 'on' : ''} ${m.read ? '' : 'unread'}`} onClick={() => openMail(m.id)}>
               <div className="row gap-6">
                 {!m.read && <span className="mb-dot" />}
-                <span className="mb-from">制作物依頼システム</span>
+                <span className="mb-from">製作物依頼システム</span>
                 <span className="grow" />
                 <span className="mono tiny tx-3">{timeLabel(m.sentAt)}</span>
               </div>
@@ -162,7 +162,7 @@ function MailView({ mail }: { mail: Mail }) {
           <div className="mb-banner">
             <img src={banner} alt="" />
             <div>
-              <small>制作物依頼システム</small>
+              <small>製作物依頼システム</small>
               <b>{mailName(mail.type)}</b>
             </div>
           </div>

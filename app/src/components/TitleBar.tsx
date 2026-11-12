@@ -37,7 +37,7 @@ export function TitleBar() {
     <header className="titlebar" data-tauri-drag-region>
       <div className="titlebar-brand" data-tauri-drag-region>
         <img src={icon} alt="" />
-        制作物依頼システム
+        製作物依頼システム
         <span className="sample-chip">SAMPLE</span>
       </div>
       <div className="viewswitch">

@@ -57,7 +57,7 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="side-brand">
           <img src={icon} alt="" />
           <div>
-            <b>制作物依頼</b>
+            <b>製作物依頼</b>
             <small>REQUEST SYSTEM</small>
           </div>
         </div>

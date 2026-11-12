@@ -33,5 +33,5 @@ pub fn run() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![save_text_file])
         .run(tauri::generate_context!())
-        .expect("制作物依頼システムの起動に失敗しました");
+        .expect("製作物依頼システムの起動に失敗しました");
 }

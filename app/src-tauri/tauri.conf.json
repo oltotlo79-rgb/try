@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "制作物依頼システム",
+  "productName": "製作物依頼システム",
   "version": "1.0.0",
   "identifier": "local.example.seisakubutsu-irai",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "制作物依頼システム（サンプル）",
+        "title": "製作物依頼システム（サンプル）",
         "width": 1440,
         "height": 900,
         "minWidth": 1100,

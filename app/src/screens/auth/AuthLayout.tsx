@@ -20,7 +20,7 @@ export function AuthLayout({ route, sid, children }: { route: Route; sid: string
               <div className="eyebrow" style={{ margin: 0 }}>
                 <span className="sid">{sid}</span>PRODUCTION REQUEST SYSTEM
               </div>
-              <h1>制作物依頼システム</h1>
+              <h1>製作物依頼システム</h1>
             </div>
           </div>
           {children}
@@ -31,7 +31,7 @@ export function AuthLayout({ route, sid, children }: { route: Route; sid: string
         <img src={hero} alt="" />
         <div className="auth-hero-shade" />
         <div className="auth-hero-copy">
-          <p className="auth-hero-line">制作物の依頼・承認・進捗管理</p>
+          <p className="auth-hero-line">製作物の依頼・承認・進捗管理</p>
         </div>
       </div>
     </div>

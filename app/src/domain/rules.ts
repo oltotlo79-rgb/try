@@ -2,7 +2,7 @@
 import type { ApprovalStep, DB, Employee, PersonSnap, RequestStatus, Roles, WorkRequest } from './types'
 import { daysUntil } from './format'
 
-export const APP_NAME = '制作物依頼システム'
+export const APP_NAME = '製作物依頼システム'
 export const BASE_URL = 'https://seisaku.example.local'
 export const TOKEN_TTL_DAYS = 14
 export const MAX_DRAWINGS = 10

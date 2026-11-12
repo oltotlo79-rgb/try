@@ -4,7 +4,7 @@ import { newId } from './ids'
 import { BASE_URL, currentRoundSteps, findEmployee, isAdmin, isIT, isLeaderPlus, isManager, rolesOf, statusText } from './rules'
 import { fmtDate, fmtDateTime } from './format'
 
-export const MAIL_FROM = '制作物依頼システム <noreply@example.co.jp>'
+export const MAIL_FROM = '製作物依頼システム <noreply@example.co.jp>'
 
 const MAIL_NAMES: Record<MailType, string> = {
   M01: '依頼受付のお知らせ',
@@ -103,9 +103,9 @@ function approvalProgressText(req: WorkRequest, me: ApprovalStep): string {
 
 export function mailM01(db: DB, req: WorkRequest, now: number): Mail {
   const to = [rcpt(req.requester)]
-  return base(db, 'M01', to, `【制作物依頼】受付しました（${req.number} ${req.title}）`, now, {
+  return base(db, 'M01', to, `【製作物依頼】受付しました（${req.number} ${req.title}）`, now, {
     requestId: req.id,
-    paragraphs: ['制作物依頼を受け付けました。', '承認の進み具合は「自分の依頼」でいつでも確認できます。'],
+    paragraphs: ['製作物依頼を受け付けました。', '承認の進み具合は「自分の依頼」でいつでも確認できます。'],
     facts: [...reqFacts(req), ['回覧ルート', routeText(req)]],
     link: requesterLink(req),
   })
@@ -114,13 +114,13 @@ export function mailM01(db: DB, req: WorkRequest, now: number): Mail {
 export function mailM02(db: DB, req: WorkRequest, step: ApprovalStep, token: string, expiresAt: number, now: number, reminder = false): Mail {
   const to = [rcpt(step.approver)]
   const subject = reminder
-    ? `【再送】承認のお願い 制作物依頼 ${req.number}`
-    : `【承認のお願い】制作物依頼 ${req.number}「${req.title}」`
+    ? `【再送】承認のお願い 製作物依頼 ${req.number}`
+    : `【承認のお願い】製作物依頼 ${req.number}「${req.title}」`
   return base(db, reminder ? 'M12' : 'M02', to, subject, now, {
     requestId: req.id,
     paragraphs: [
       ...(reminder ? ['承認待ちが2日続いているため、新しいURLでお送りしています（以前のURLは使えません）。'] : []),
-      `${req.requester.dept} ${req.requester.name} さんから、制作物依頼の承認依頼が届いています。`,
+      `${req.requester.dept} ${req.requester.name} さんから、製作物依頼の承認依頼が届いています。`,
       '内容をご確認のうえ、下記のURLから「承認」または「差し戻し」を選択してください。',
     ],
     facts: [
@@ -140,7 +140,7 @@ export function mailM02(db: DB, req: WorkRequest, step: ApprovalStep, token: str
 }
 
 export function mailM03(db: DB, req: WorkRequest, step: ApprovalStep, comment: string, now: number): Mail {
-  return base(db, 'M03', [rcpt(req.requester)], `【差し戻し】制作物依頼 ${req.number} を修正してください`, now, {
+  return base(db, 'M03', [rcpt(req.requester)], `【差し戻し】製作物依頼 ${req.number} を修正してください`, now, {
     requestId: req.id,
     paragraphs: ['承認者から依頼の修正を求められました。', '「自分の依頼」から詳細を開き「編集・再依頼する」で修正してください。'],
     facts: [...reqFacts(req), ['差し戻した人', `${step.role} ${step.approver.name}（${step.approver.dept}）`], ['コメント', comment]],
@@ -149,7 +149,7 @@ export function mailM03(db: DB, req: WorkRequest, step: ApprovalStep, comment: s
 }
 
 export function mailM04(db: DB, req: WorkRequest, step: ApprovalStep, now: number): Mail {
-  return base(db, 'M04', [rcpt(step.approver)], `【対応不要】制作物依頼 ${req.number} は引き戻されました`, now, {
+  return base(db, 'M04', [rcpt(step.approver)], `【対応不要】製作物依頼 ${req.number} は引き戻されました`, now, {
     requestId: req.id,
     paragraphs: [
       `${req.requester.dept} ${req.requester.name} さんが依頼を引き戻したため、承認の対応は不要になりました。`,
@@ -166,7 +166,7 @@ const itStaff = (db: DB) => db.employees.filter((e) => e.active && isIT(e))
 
 export function mailM05(db: DB, req: WorkRequest, now: number): Mail {
   const leader = leadersAndManagers(db).find((e) => rolesOf(db, e).leader)
-  return base(db, 'M05', [rcpt(req.requester)], `【回覧完了】制作物依頼 ${req.number} 打ち合わせを設定してください`, now, {
+  return base(db, 'M05', [rcpt(req.requester)], `【回覧完了】製作物依頼 ${req.number} 打ち合わせを設定してください`, now, {
     requestId: req.id,
     cc: leadersAndManagers(db).map(rcpt),
     paragraphs: ['すべての承認が完了しました。', '設備担当と打ち合わせの日程を設定してください。'],
@@ -185,7 +185,7 @@ export function mailM06(db: DB, req: WorkRequest, now: number): Mail {
 }
 
 export function mailM07(db: DB, req: WorkRequest, assignee: Employee, now: number): Mail {
-  return base(db, 'M07', [rcpt(assignee)], `【担当者任命】制作物依頼 ${req.number} の担当者になりました`, now, {
+  return base(db, 'M07', [rcpt(assignee)], `【担当者任命】製作物依頼 ${req.number} の担当者になりました`, now, {
     requestId: req.id,
     paragraphs: ['次の依頼の担当者に任命されました。'],
     facts: reqFacts(req),
@@ -196,7 +196,7 @@ export function mailM07(db: DB, req: WorkRequest, assignee: Employee, now: numbe
 export function mailM08(db: DB, req: WorkRequest, days: number, now: number): Mail {
   const when = days > 0 ? `納期まであと${days}日です` : days === 0 ? '本日が納期です' : `納期を${-days}日過ぎています`
   const assignees = req.assignees.map((id) => findEmployee(db, id)).filter((e): e is Employee => !!e)
-  return base(db, 'M08', [rcpt(req.requester), ...managersAndIT(db).filter((e) => isManager(db, e)).map(rcpt)], `【納期フォロー】制作物依頼 ${req.number} ${when}`, now, {
+  return base(db, 'M08', [rcpt(req.requester), ...managersAndIT(db).filter((e) => isManager(db, e)).map(rcpt)], `【納期フォロー】製作物依頼 ${req.number} ${when}`, now, {
     requestId: req.id,
     cc: assignees.map(rcpt),
     greeting: '関係者各位',
@@ -211,7 +211,7 @@ export function mailM08(db: DB, req: WorkRequest, days: number, now: number): Ma
 }
 
 export function mailM09(db: DB, req: WorkRequest, step: ApprovalStep, days: number, now: number): Mail {
-  return base(db, 'M09', managersAndIT(db).map(rcpt), `【承認停滞】制作物依頼 ${req.number} が${step.role}で${days}日止まっています`, now, {
+  return base(db, 'M09', managersAndIT(db).map(rcpt), `【承認停滞】製作物依頼 ${req.number} が${step.role}で${days}日止まっています`, now, {
     requestId: req.id,
     paragraphs: ['承認待ちが続いています。必要に応じて代理承認・再送を行ってください。'],
     facts: [...reqFacts(req), ['止まっている人', `${step.role} ${step.approver.name}（${step.approver.dept}）`], ['経過日数', `${days}日（${fmtDateTime(step.sentAt)} 送信）`]],
@@ -224,7 +224,7 @@ export function mailM09(db: DB, req: WorkRequest, step: ApprovalStep, days: numb
 }
 
 export function mailM10(db: DB, req: WorkRequest, step: ApprovalStep, by: PersonSnap, reason: string, now: number): Mail {
-  return base(db, 'M10', [rcpt(step.approver), rcpt(req.requester)], `【お知らせ】制作物依頼 ${req.number} は代理で承認されました`, now, {
+  return base(db, 'M10', [rcpt(step.approver), rcpt(req.requester)], `【お知らせ】製作物依頼 ${req.number} は代理で承認されました`, now, {
     requestId: req.id,
     greeting: '関係者各位',
     paragraphs: [`${step.role}（${step.approver.name}）の承認を、管理者が代理で行いました。`, '先にお送りした承認用のURLは使えなくなっています。'],
@@ -234,9 +234,9 @@ export function mailM10(db: DB, req: WorkRequest, step: ApprovalStep, by: Person
 
 export function mailM11(db: DB, req: WorkRequest, now: number): Mail {
   const assignees = req.assignees.map((id) => findEmployee(db, id)).filter((e): e is Employee => !!e)
-  return base(db, 'M11', [rcpt(req.requester)], `【完了】制作物依頼 ${req.number} の引き渡しが完了しました`, now, {
+  return base(db, 'M11', [rcpt(req.requester)], `【完了】製作物依頼 ${req.number} の引き渡しが完了しました`, now, {
     requestId: req.id,
-    paragraphs: ['ご依頼の制作物の引き渡しが完了しました。ご利用ありがとうございました。'],
+    paragraphs: ['ご依頼の製作物の引き渡しが完了しました。ご利用ありがとうございました。'],
     facts: [...reqFacts(req), ['引き渡し完了日', fmtDate(req.deliveryDate)], ['担当者', assignees.map((e) => e.name).join('・') || '—']],
     link: requesterLink(req),
   })
