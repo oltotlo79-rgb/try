@@ -84,7 +84,7 @@ interface State {
   proxyApprove: (reqId: string, reason: string) => boolean
   resend: (reqId: string, newApproverId?: string) => boolean
   adminCancel: (reqId: string) => boolean
-  adminEditRequest: (reqId: string, patch: Partial<Pick<WorkRequest, 'title' | 'description' | 'dueDate'>>) => boolean
+  adminEditRequest: (reqId: string, patch: Partial<Pick<WorkRequest, 'title' | 'description' | 'dueDate' | 'costCenter'>>) => boolean
 
   /** IT担当者権限を付ける・外す（ほかの権限は所属部署・役職から自動で決まる） */
   setIT: (empId: string, on: boolean) => boolean

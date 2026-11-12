@@ -7,6 +7,7 @@ import type { RouteOf } from '../../router'
 import type { WorkRequest } from '../../domain/types'
 import { useApp, useMe, useRequest } from '../../store'
 import { ApprovalTrack, AttachmentList, Avatar, Badge, CommentLog, Empty, PageHead, Panel, ProgressBar, StatusBadge } from '../../components/ui'
+import { CostCenterView } from '../../components/CostCenterPicker'
 import { DrawingThumb } from '../../components/DrawingThumb'
 import { canPullBack, canRequesterCancel, canResubmit, dueTone, findEmployee, pendingStep } from '../../domain/rules'
 import { daysUntil, fmtDate, fmtMDHM } from '../../domain/format'
@@ -137,6 +138,8 @@ function Detail({ req }: { req: WorkRequest }) {
                 {tone === 'overdue' && <Badge tone="danger" sm>納期超過</Badge>}
                 {tone === 'soon' && <Badge tone="warn" sm>{days === 0 ? '本日' : `あと${days}日`}</Badge>}
               </dd>
+              <dt>原価センター</dt>
+              <dd><CostCenterView value={req.costCenter} /></dd>
               <dt>依頼内容</dt>
               <dd className="desc-text">{req.description}</dd>
             </dl>

@@ -7,6 +7,7 @@ import { approveByToken, proxyApprove, returnByToken, saveProgress, submitReques
 import { findEmployee, pendingStep } from '../domain/rules'
 import { createInquiry, postInquiryMessage, resolveInquiry } from '../domain/inquiries'
 import { newId } from '../domain/ids'
+import { sampleCostCenter } from './costCenterSeed'
 
 const HOUR = 60 * 60 * 1000
 
@@ -65,6 +66,7 @@ export function addHistory(db: DB, now: number) {
     req.title = title
     req.description = desc
     req.dueDate = isoDaysFrom(sendAt, int(26, 50))
+    req.costCenter = sampleCostCenter(db, user.deptId, off) // 乱数の並びを変えないよう日付で選ぶ
     const year = new Date(sendAt).getFullYear()
     seq[year] = (seq[year] ?? 0) + 1
     db.seq.request = seq[year] - 1

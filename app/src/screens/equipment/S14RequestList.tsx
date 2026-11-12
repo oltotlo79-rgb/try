@@ -143,9 +143,10 @@ export default function S14RequestList({ route }: { route: RouteOf<'S14'> }) {
   const toggleSort = (key: SortKey) => setSort((s) => (s.key === key ? { key, dir: (s.dir * -1) as 1 | -1 } : { key, dir: key === 'requestDate' || key === 'number' ? -1 : 1 }))
 
   const exportCsv = () => {
-    const head = ['依頼番号', '依頼日', '依頼部署', '依頼者', '件名', '納期', '担当者1', '担当者2', '状態', '製作進捗(%)', '引き渡し完了日', '貢献額(円)']
+    const head = ['依頼番号', '依頼日', '依頼部署', '依頼者', '件名', '納期', '原価センター', '所属（原価センター）', '担当者1', '担当者2', '状態', '製作進捗(%)', '引き渡し完了日', '貢献額(円)']
     const body = sorted.map((r) => [
       r.number, fmtDate(r.requestDate), r.requester.dept, r.requester.name, r.title, fmtDate(r.dueDate),
+      r.costCenter?.code ?? '', r.costCenter?.affiliation ?? '',
       findEmployee(db, r.assignees[0])?.name ?? '', findEmployee(db, r.assignees[1])?.name ?? '',
       statusShort(r), r.progress, r.deliveryDate ? fmtDate(r.deliveryDate) : '', r.contribution ?? '',
     ])

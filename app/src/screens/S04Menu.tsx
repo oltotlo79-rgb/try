@@ -78,7 +78,7 @@ export default function S04Menu({ route }: { route: RouteOf<'S04'> }) {
       </section>
 
       <Section label="すべての社員" color="var(--role-requester)">
-        <Tile no="01" img={imgRequest} title="依頼する" desc="件名・内容・納期を入力し、図面を描いて依頼する" onClick={() => useApp.getState().newDraft()} />
+        <Tile no="01" img={imgRequest} title="依頼する" desc="件名・内容・納期・原価センターを入力し、図面を描いて依頼する" onClick={() => useApp.getState().newDraft()} />
         <Tile no="02" img={imgMy} title="自分の依頼" desc="出した依頼の承認状況と製作の進み具合を見る" badge={returned ? `差し戻し ${returned}件` : undefined} onClick={() => go({ s: 'S10' })} />
         <Tile no="03" img={imgInquiry} title="問い合わせ" desc="使い方の質問・不具合の連絡・要望。過去の回答も見られる" onClick={() => go({ s: 'S18' })} />
       </Section>

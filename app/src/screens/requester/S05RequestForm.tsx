@@ -4,10 +4,11 @@ import {
   ArrowLeft, ArrowRight, AtSign, Building2, CalendarDays, FileJson, FileText, Paperclip, PenTool, Plus, Trash2, Undo2,
 } from 'lucide-react'
 import type { RouteOf } from '../../router'
-import type { Attachment, Drawing, WorkRequest } from '../../domain/types'
+import type { Attachment, CostCenter, Drawing, WorkRequest } from '../../domain/types'
 import { useApp, useMe, useRequest } from '../../store'
 import { Badge, CommentLog, Empty, Field, PageHead, Panel } from '../../components/ui'
 import { DrawingThumb } from '../../components/DrawingThumb'
+import { CostCenterField, useRecentCostCenters } from '../../components/CostCenterPicker'
 import { daysUntil, fileSizeLabel, fmtDate, toISODate } from '../../domain/format'
 import { MAX_DRAWINGS } from '../../domain/rules'
 import { readTitleBlock } from '../../data/drawings'
@@ -79,7 +80,9 @@ function Form({ req }: { req: WorkRequest }) {
   const [title, setTitle] = useState(req.title)
   const [description, setDescription] = useState(req.description)
   const [dueDate, setDueDate] = useState(req.dueDate)
-  const [errors, setErrors] = useState<{ title?: string; description?: string; dueDate?: string }>({})
+  const [costCenter, setCostCenter] = useState<CostCenter | null>(req.costCenter)
+  const [errors, setErrors] = useState<{ title?: string; description?: string; dueDate?: string; costCenter?: string }>({})
+  const recentCostCenters = useRecentCostCenters(req.requester.employeeId, req.id)
   const jsonInput = useRef<HTMLInputElement>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -88,7 +91,7 @@ function Form({ req }: { req: WorkRequest }) {
   const isNew = req.status === 'draft' && !req.number
   const sheets = latestSheets(req)
   const nextSheet = (sheets.length ? Math.max(...sheets.map((d) => d.sheetNo)) : 0) + 1
-  const fields = () => ({ title, description, dueDate })
+  const fields = () => ({ title, description, dueDate, costCenter })
 
   const validate = () => {
     const e: typeof errors = {}
@@ -97,6 +100,7 @@ function Form({ req }: { req: WorkRequest }) {
     if (!description.trim()) e.description = '入力してください'
     if (!dueDate) e.dueDate = '入力してください'
     else if (daysUntil(dueDate, now) < 0) e.dueDate = '今日以降の日付を選んでください'
+    if (!costCenter) e.costCenter = '選んでください'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -155,7 +159,7 @@ function Form({ req }: { req: WorkRequest }) {
       go({ s: 'S11', reqId: req.id })
       return
     }
-    const dirty = title || description || dueDate || req.drawings.length || req.attachments.length
+    const dirty = title || description || dueDate || costCenter || req.drawings.length || req.attachments.length
     if (dirty) {
       const ok = await useApp.getState().ask({
         title: '入力をやめてメニューに戻りますか？',
@@ -234,6 +238,18 @@ function Form({ req }: { req: WorkRequest }) {
                 min={today}
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
+              />
+            </Field>
+            <Field label="原価センター" required error={errors.costCenter}
+              hint="費用を負担する原価センターを選びます。区分（所属の「・」より前：本社・LF・エン など）で絞り込み、原価センター・所属の一部で検索できます。社員データの所属部署とは別のデータのため、自動では入りません。">
+              <CostCenterField
+                value={costCenter}
+                invalid={!!errors.costCenter}
+                recent={recentCostCenters}
+                onChange={(c) => {
+                  setCostCenter(c)
+                  setErrors((e) => ({ ...e, costCenter: undefined }))
+                }}
               />
             </Field>
           </div>

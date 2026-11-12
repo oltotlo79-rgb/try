@@ -7,6 +7,7 @@ import { checkToken } from '../../domain/workflow'
 import { fmtDate, fmtDateTime } from '../../domain/format'
 import { pendingStep } from '../../domain/rules'
 import { ApprovalTrack, AttachmentList, Badge, CommentLog, Field, Panel } from '../../components/ui'
+import { CostCenterView } from '../../components/CostCenterPicker'
 import { DrawingThumb } from '../../components/DrawingThumb'
 import { UrlBar } from '../../components/Shell'
 import { ResultView } from './S13Result'
@@ -90,6 +91,8 @@ export default function S12Approve({ route }: { route: RouteOf<'S12'> }) {
                   <dd className="mono">{fmtDate(req.requestDate)}</dd>
                   <dt>納期</dt>
                   <dd className="mono">{fmtDate(req.dueDate)}</dd>
+                  <dt>原価センター</dt>
+                  <dd><CostCenterView value={req.costCenter} /></dd>
                   <dt>依頼内容</dt>
                   <dd style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>{req.description}</dd>
                   <dt>補足資料</dt>

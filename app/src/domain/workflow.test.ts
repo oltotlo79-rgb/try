@@ -5,6 +5,7 @@ import { createDraft } from './requests'
 import { approveByToken, checkToken, morningBatch, proxyApprove, pullBack, resendApproval, returnByToken, saveProgress, submitRequest } from './workflow'
 import { canEditField, canUseEquipment, currentRoundSteps, equalRatios, findEmployee, isAdmin, isEquipment, isLeaderPlus, needsPassword, pendingStep, roleLabel, rolesOf } from './rules'
 import { applyImport, parseEmployeeCsv, previewImport } from './importer'
+import { COST_CENTER_OTHER, costCenterGroup, costCenterGroups, searchCostCenters } from './costCenters'
 import { contributionRows, splitAmount } from './stats'
 import { DAY_MS } from './format'
 
@@ -17,6 +18,7 @@ function newRequest(db: DB) {
   r.title = 'テスト'
   r.description = '内容'
   r.dueDate = '2026-11-30'
+  r.costCenter = { code: '3081', affiliation: 'コプ・製造第一部101工場生産附帯設備' }
   return r
 }
 
@@ -274,5 +276,54 @@ describe('権限は所属部署・役職から自動で決まる', () => {
     const ishii = findEmployee(next, '20410')!
     expect([roleLabel(next, ishii), needsPassword(next, ishii), ishii.password]).toEqual(['設備メンバー', true, null])
     expect(roleLabel(next, findEmployee(next, '79306')!)).toBe('設備班長')
+  })
+})
+
+describe('原価センター', () => {
+  it('一覧は docs/123.xlsx の原価センター・所属の2列（4,393件・重複なし）', () => {
+    const db = buildSeed(NOW)
+    expect(db.costCenters).toHaveLength(4393)
+    expect(new Set(db.costCenters.map((c) => c.code)).size).toBe(4393)
+    expect(db.costCenters[0]).toEqual({ code: '1061', affiliation: '本社･ﾘﾌﾄｴﾝｼﾞﾝ認証費（LF営業関連_引当済)' })
+    expect(Object.keys(db.costCenters[0])).toEqual(['code', 'affiliation'])
+  })
+
+  it('区分は所属の最初の「・」より前（半角「･」も同じ扱い）。「・」がなければ「その他」', () => {
+    expect(costCenterGroup('本社･ﾘﾌﾄｴﾝｼﾞﾝ認証費（LF営業関連_引当済)')).toBe('本社')
+    expect(costCenterGroup('LF・安全総務部人事G')).toBe('LF')
+    expect(costCenterGroup('電池･共総･203工場･事務所')).toBe('電池')
+    expect(costCenterGroup('ＬＦ・品質保証部')).toBe('LF')
+    expect(costCenterGroup('監査役')).toBe(COST_CENTER_OTHER)
+    const groups = costCenterGroups(buildSeed(NOW).costCenters)
+    expect(groups[0]).toEqual({ name: '本社', count: 368 })
+    expect(groups.at(-1)!.name).toBe(COST_CENTER_OTHER)
+    expect(groups.reduce((a, g) => a + g.count, 0)).toBe(4393)
+  })
+
+  it('区分とキーワード（原価センター・所属、全角半角を区別しない）で絞り込める', () => {
+    const list = buildSeed(NOW).costCenters
+    const honsha = searchCostCenters(list, '本社', '')
+    expect(honsha).toHaveLength(368)
+    expect(honsha.every((c) => costCenterGroup(c.affiliation) === '本社')).toBe(true)
+    expect(searchCostCenters(list, null, '3081').map((c) => c.code)).toEqual(['3081'])
+    // 半角カナの所属も全角で探せる
+    expect(searchCostCenters(list, '本社', 'リフト').map((c) => c.code)).toContain('1061')
+    // 空白区切りはすべてを含む
+    const both = searchCostCenters(list, 'LF', '保全 生準')
+    expect(both.length).toBeGreaterThan(0)
+    expect(both.every((c) => c.affiliation.includes('保全') && c.affiliation.includes('生準'))).toBe(true)
+  })
+
+  it('原価センターを選ばないと依頼を送れない。選んだ内容は依頼書に写しで残る', () => {
+    const db = buildSeed(NOW)
+    const r = newRequest(db)
+    r.costCenter = null
+    expect(() => submitRequest(db, r.id, NOW)).toThrow('原価センター')
+    r.costCenter = { ...db.costCenters.find((c) => c.code === '4431')! }
+    submitRequest(db, r.id, NOW)
+    expect(r.status).toBe('circulating')
+    expect(r.costCenter).toEqual({ code: '4431', affiliation: 'LF・製造部PM室保全課生準G' })
+    // サンプルの依頼書にもすべて入っている
+    expect(db.requests.every((x) => x.costCenter && db.costCenters.some((c) => c.code === x.costCenter!.code))).toBe(true)
   })
 })

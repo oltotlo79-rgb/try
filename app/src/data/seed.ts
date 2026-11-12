@@ -10,6 +10,7 @@ import { newId } from '../domain/ids'
 import { cart, cover, jig, plate, stand, readTitleBlock } from './drawings'
 import { PHOTOS } from './photos'
 import { addHistory } from './history'
+import { COST_CENTERS, sampleCostCenter } from './costCenterSeed'
 
 const HOUR = 60 * 60 * 1000
 
@@ -96,6 +97,7 @@ function baseDB(): DB {
   return {
     employees,
     departments: DEPTS.map(([id, code, name]) => ({ id, code, name, reviewers: REVIEWERS[id] ?? [null, null, null], active: true })),
+    costCenters: COST_CENTERS.map((c) => ({ ...c })),
     targets: [
       { id: 't1', order: 1, employeeId: '30101', active: true },
       { id: 't2', order: 2, employeeId: '30201', active: true },
@@ -131,6 +133,7 @@ function makeRequest(db: DB, s: ReqSpec, now: number): WorkRequest {
   req.title = s.title
   req.description = s.desc
   req.dueDate = isoDaysFrom(now, s.dueOff)
+  req.costCenter = sampleCostCenter(db, user.deptId, s.no)
   for (const [i, key] of (s.drawings ?? []).entries()) {
     const json = DRAW[key](isoDaysFrom(t, -1).replace(/-/g, '/'), user.name)
     const tb = readTitleBlock(json)

@@ -98,6 +98,7 @@ export function validateReviewers(req: WorkRequest): string | null {
 export function submitRequest(db: DB, reqId: string, now: number): Outcome {
   const req = getRequest(db, reqId)
   if (!['draft', 'returned', 'pulledBack'].includes(req.status)) throw new RuleError('この依頼は送信できない状態です')
+  if (!req.costCenter) throw new RuleError('原価センターを選んでください')
   const err = validateReviewers(req)
   if (err) throw new RuleError(err)
   const out: Mail[] = []

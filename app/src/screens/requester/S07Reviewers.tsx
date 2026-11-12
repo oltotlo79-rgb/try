@@ -5,6 +5,7 @@ import type { RouteOf } from '../../router'
 import type { Employee, WorkRequest } from '../../domain/types'
 import { useApp, useRequest } from '../../store'
 import { Avatar, Badge, Empty, EmployeePicker, PageHead, Panel } from '../../components/ui'
+import { CostCenterView } from '../../components/CostCenterPicker'
 import { DrawingThumb } from '../../components/DrawingThumb'
 import { deptName, findEmployee } from '../../domain/rules'
 import { fmtDate } from '../../domain/format'
@@ -187,6 +188,8 @@ function Reviewers({ req }: { req: WorkRequest }) {
             <dd>{req.requester.dept}　{req.requester.name}</dd>
             <dt>納期</dt>
             <dd className="mono">{fmtDate(req.dueDate)}</dd>
+            <dt>原価センター</dt>
+            <dd><CostCenterView value={req.costCenter} /></dd>
             <dt>図面</dt>
             <dd>{sheets.length ? `${sheets.length}枚` : 'なし'}</dd>
             <dt>補足資料</dt>

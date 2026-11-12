@@ -11,6 +11,7 @@ import { useApp, useMe, useRequest } from '../../store'
 import {
   AttachmentList, Avatar, Badge, CommentLog, Empty, Field, PageHead, Panel, ProgressBar, StatusBadge,
 } from '../../components/ui'
+import { CostCenterView } from '../../components/CostCenterPicker'
 import { DrawingThumb } from '../../components/DrawingThumb'
 import { MAX_ASSIGNEES, canEditField, dueTone, equalRatios, findEmployee, isEquipment, isLeaderPlus } from '../../domain/rules'
 import { splitAmount } from '../../domain/stats'
@@ -175,6 +176,8 @@ export default function S15RequestDetail({ route }: { route: RouteOf<'S15'> }) {
             </dd>
             <dt>納期／状態</dt>
             <dd className="row gap-6 wrap"><span className="mono">{fmtDate(req.dueDate)}</span><StatusBadge req={req} /></dd>
+            <dt>原価センター</dt>
+            <dd><CostCenterView value={req.costCenter} /></dd>
             <dt>依頼内容</dt>
             <dd style={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>{req.description}</dd>
             <dt>補足資料</dt>

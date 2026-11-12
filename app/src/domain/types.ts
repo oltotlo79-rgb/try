@@ -38,6 +38,12 @@ export interface Department {
   active: boolean
 }
 
+/** 原価センター（依頼書で選ぶ費用の負担先）。社員データの所属部署とは対応しない別のデータ */
+export interface CostCenter {
+  code: string // 原価センター（英数字4桁。例：3081）
+  affiliation: string // 所属（例：コプ・製造第一部101工場生産附帯設備）。「・」より前が区分
+}
+
 export interface CirculationTarget {
   id: string
   order: number
@@ -133,6 +139,8 @@ export interface WorkRequest {
   title: string
   description: string
   dueDate: string // YYYY-MM-DD
+  /** 原価センター（依頼者が選ぶ。選んだ時点の写し。送信前は null） */
+  costCenter: CostCenter | null
   drawings: Drawing[]
   attachments: Attachment[]
   reviewers: [string | null, string | null, string | null]
@@ -249,6 +257,7 @@ export interface Mail {
 export interface DB {
   employees: Employee[]
   departments: Department[]
+  costCenters: CostCenter[]
   targets: CirculationTarget[]
   requests: WorkRequest[]
   tokens: ApprovalToken[]

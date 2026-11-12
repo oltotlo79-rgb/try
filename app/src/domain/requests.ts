@@ -23,6 +23,7 @@ export function createDraft(db: DB, user: Employee, now: number): WorkRequest {
     title: '',
     description: '',
     dueDate: '',
+    costCenter: null,
     drawings: [],
     attachments: [],
     reviewers: defaultReviewers(db, user),

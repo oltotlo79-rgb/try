@@ -7,6 +7,7 @@ import type { RouteOf } from '../../router'
 import type { ApprovalStep, WorkRequest } from '../../domain/types'
 import { useApp } from '../../store'
 import { Badge, Empty, EmployeePicker, Field, PageHead, Panel, StatusBadge } from '../../components/ui'
+import { CostCenterField } from '../../components/CostCenterPicker'
 import { currentRoundSteps, pendingStep } from '../../domain/rules'
 import { elapsedDays, fmtDate, fmtDateTime, fmtMD, fmtMDHM } from '../../domain/format'
 import headImg from '../../assets/img/set_manage.webp'
@@ -138,9 +139,10 @@ function Detail({ req, now }: { req: WorkRequest; now: number }) {
   const [reason, setReason] = useState('')
   const [reasonErr, setReasonErr] = useState<string | null>(null)
   const [picking, setPicking] = useState(false)
-  const [edit, setEdit] = useState({ title: req.title, description: req.description, dueDate: req.dueDate })
+  const initialEdit = () => ({ title: req.title, description: req.description, dueDate: req.dueDate, costCenter: req.costCenter })
+  const [edit, setEdit] = useState(initialEdit)
   const editable = req.status !== 'cancelled' && req.status !== 'done'
-  const dirty = edit.title !== req.title || edit.description !== req.description || edit.dueDate !== req.dueDate
+  const dirty = edit.title !== req.title || edit.description !== req.description || edit.dueDate !== req.dueDate || edit.costCenter?.code !== req.costCenter?.code
 
   // 回覧者1〜3（空欄は「飛ばし」）＋回覧先の行
   type Row = { key: string; order: string; role: string; step?: ApprovalStep }
@@ -201,11 +203,11 @@ function Detail({ req, now }: { req: WorkRequest; now: number }) {
   }
 
   const saveEdit = () => {
-    if (!edit.title.trim() || !edit.description.trim() || !edit.dueDate) {
-      store().toast('danger', '件名・依頼内容・納期を入力してください')
+    if (!edit.title.trim() || !edit.description.trim() || !edit.dueDate || !edit.costCenter) {
+      store().toast('danger', '件名・依頼内容・納期・原価センターを入力してください')
       return
     }
-    store().adminEditRequest(req.id, { title: edit.title.trim(), description: edit.description.trim(), dueDate: edit.dueDate })
+    store().adminEditRequest(req.id, { title: edit.title.trim(), description: edit.description.trim(), dueDate: edit.dueDate, costCenter: edit.costCenter })
   }
 
   const rounds = [...new Set(req.steps.map((s) => s.round))].sort((a, b) => b - a)
@@ -311,7 +313,7 @@ function Detail({ req, now }: { req: WorkRequest; now: number }) {
             <>
               <button className="btn btn-danger" disabled={!editable} onClick={cancel}><Ban /> 取り下げにする</button>
               <span className="grow" />
-              <button className="btn btn-ghost" disabled={!dirty} onClick={() => setEdit({ title: req.title, description: req.description, dueDate: req.dueDate })}>元に戻す</button>
+              <button className="btn btn-ghost" disabled={!dirty} onClick={() => setEdit(initialEdit())}>元に戻す</button>
               <button className="btn btn-primary" disabled={!dirty || req.status === 'cancelled'} onClick={saveEdit}><Save /> 保存</button>
             </>
           }
@@ -325,6 +327,9 @@ function Detail({ req, now }: { req: WorkRequest; now: number }) {
             </Field>
             <Field label="納期" required>
               <input type="date" className="input" style={{ width: 200 }} value={edit.dueDate} disabled={req.status === 'cancelled'} onChange={(e) => setEdit({ ...edit, dueDate: e.target.value })} />
+            </Field>
+            <Field label="原価センター" required>
+              <CostCenterField value={edit.costCenter} disabled={req.status === 'cancelled'} onChange={(c) => setEdit({ ...edit, costCenter: c })} />
             </Field>
           </div>
         </Panel>
